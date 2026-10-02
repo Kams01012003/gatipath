@@ -20,3 +20,5 @@ A premium Indian train-status UI prototype.
 
 ## Live API integration
 The UI is deliberately separated from the railway data source. A production version should use a server-side API layer and keep API keys off the browser. RailRadar currently documents a live train endpoint with current location, delay, route, ETA/ETD and exception fields; validate its commercial terms, reliability and quotas before production use.
+
+Deployment configuration updated.
