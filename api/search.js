@@ -16,30 +16,322 @@ export default async function handler(req, res) {
     });
   }
 
-  try {
-    const url = `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(q)}&limit=10`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    Accept: "application/json"
+  };
 
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: "application/json"
-      }
-    });
-
+  async function railRadar(url) {
+    const response = await fetch(url, { headers });
     const body = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({
-        success: false,
-        error: body?.error?.message || "Train search is temporarily unavailable."
+      const error = new Error(
+        body?.error?.message || "RailRadar request failed."
+      );
+      error.status = response.status;
+      throw error;
+    }
+
+    return body;
+  }
+
+  function cleanWords(value) {
+    return value
+      .replace(/\bfrom\b/gi, " ")
+      .replace(/\bto\b/gi, " ")
+      .replace(/\btrain\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function normalizeResults(results) {
+    if (!Array.isArray(results)) return [];
+
+    return results
+      .map((item) => ({
+        ...item,
+        source:
+          typeof item.source === "string"
+            ? item.source
+            : item.source?.name || "",
+        destination:
+          typeof item.destination === "string"
+            ? item.destination
+            : item.destination?.name || ""
+      }))
+      .filter((item) => item.number);
+  }
+
+  try {
+    /*
+     * 1. Direct 5-digit train number search.
+     */
+    const numberMatch = q.match(/\b\d{5}\b/);
+
+    if (numberMatch) {
+      const body = await railRadar(
+        `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
+          numberMatch[0]
+        )}&limit=10`
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: normalizeResults(body?.data)
       });
     }
 
-    return res.status(200).json(body);
+    /*
+     * 2. Direct train-name search.
+     *
+     * Examples:
+     * Himalayan Queen
+     * Telangana Express
+     * Rajdhani Express
+     */
+    const directTrainSearch = await railRadar(
+      `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
+        q
+      )}&limit=10`
+    );
+
+    const directResults = normalizeResults(directTrainSearch?.data);
+
+    if (directResults.length > 0) {
+      return res.status(200).json({
+        success: true,
+        data: directResults
+      });
+    }
+
+    /*
+     * 3. Route search.
+     *
+     * Supports:
+     * Hyderabad Delhi
+     * Hyderabad to Delhi
+     * Delhi to Hyderabad
+     */
+    const cleaned = cleanWords(q);
+    const words = cleaned.split(" ").filter(Boolean);
+
+    if (words.length < 2) {
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
+    }
+
+    /*
+     * Find possible station pairs.
+     */
+    const stationPairs = [];
+
+    const separatorMatch = q.match(
+      /^(.+?)\s+(?:to|from)\s+(.+)$/i
+    );
+
+    if (separatorMatch) {
+      stationPairs.push({
+        fromText: separatorMatch[1].trim(),
+        toText: separatorMatch[2].trim()
+      });
+    }
+
+    /*
+     * Also try every possible split.
+     */
+    for (let i = 1; i < words.length; i++) {
+      stationPairs.push({
+        fromText: words.slice(0, i).join(" "),
+        toText: words.slice(i).join(" ")
+      });
+    }
+
+    /*
+     * We also support:
+     *
+     * Telangana Hyderabad Delhi
+     *
+     * by detecting a possible train-name prefix/suffix.
+     */
+    const trainCandidates = [];
+
+    for (let i = 1; i < words.length; i++) {
+      const prefix = words.slice(0, i).join(" ");
+      const suffix = words.slice(i).join(" ");
+
+      try {
+        const prefixBody = await railRadar(
+          `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
+            prefix
+          )}&limit=10`
+        );
+
+        const prefixResults = normalizeResults(prefixBody?.data);
+
+        if (prefixResults.length > 0) {
+          trainCandidates.push({
+            trains: prefixResults,
+            routeText: suffix
+          });
+        }
+      } catch {
+        // Continue searching.
+      }
+
+      try {
+        const suffixBody = await railRadar(
+          `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
+            suffix
+          )}&limit=10`
+        );
+
+        const suffixResults = normalizeResults(suffixBody?.data);
+
+        if (suffixResults.length > 0) {
+          trainCandidates.push({
+            trains: suffixResults,
+            routeText: prefix
+          });
+        }
+      } catch {
+        // Continue searching.
+      }
+    }
+
+    /*
+     * Add route possibilities from detected train-name
+     * combinations.
+     */
+    for (const candidate of trainCandidates) {
+      const routeWords = cleanWords(candidate.routeText)
+        .split(" ")
+        .filter(Boolean);
+
+      if (routeWords.length >= 2) {
+        for (let i = 1; i < routeWords.length; i++) {
+          stationPairs.push({
+            fromText: routeWords.slice(0, i).join(" "),
+            toText: routeWords.slice(i).join(" "),
+            trainCandidates: candidate.trains
+          });
+        }
+      }
+    }
+
+    /*
+     * Remove duplicate station-pair attempts.
+     */
+    const uniquePairs = [];
+    const seenPairs = new Set();
+
+    for (const pair of stationPairs) {
+      const key = `${pair.fromText.toLowerCase()}|${pair.toText.toLowerCase()}`;
+
+      if (!seenPairs.has(key)) {
+        seenPairs.add(key);
+        uniquePairs.push(pair);
+      }
+    }
+
+    /*
+     * Search station names and then find trains between them.
+     */
+    for (const pair of uniquePairs) {
+      try {
+        const [fromBody, toBody] = await Promise.all([
+          railRadar(
+            `https://api.railradar.in/v1/lookup/search/stations?q=${encodeURIComponent(
+              pair.fromText
+            )}&limit=5`
+          ),
+          railRadar(
+            `https://api.railradar.in/v1/lookup/search/stations?q=${encodeURIComponent(
+              pair.toText
+            )}&limit=5`
+          )
+        ]);
+
+        const fromStations = Array.isArray(fromBody?.data)
+          ? fromBody.data
+          : [];
+
+        const toStations = Array.isArray(toBody?.data)
+          ? toBody.data
+          : [];
+
+        if (!fromStations.length || !toStations.length) {
+          continue;
+        }
+
+        const fromStation = fromStations[0];
+        const toStation = toStations[0];
+
+        const routeBody = await railRadar(
+          `https://api.railradar.in/v1/trains/between/${encodeURIComponent(
+            fromStation.code
+          )}/${encodeURIComponent(
+            toStation.code
+          )}?live=true&byCity=true`
+        );
+
+        const trains = Array.isArray(routeBody?.data?.trains)
+          ? routeBody.data.trains
+          : [];
+
+        if (!trains.length) {
+          continue;
+        }
+
+        let routeResults = trains.map((item) => ({
+          number: item?.train?.number,
+          name: item?.train?.name || "Train",
+          source: fromStation.name,
+          destination: toStation.name,
+          from: item?.from,
+          to: item?.to,
+          live: item?.live,
+          type: item?.train?.type,
+          runDays: item?.train?.runDays
+        }));
+
+        /*
+         * If a train name was included in the search,
+         * keep only that train.
+         */
+        if (pair.trainCandidates?.length) {
+          const allowedNumbers = new Set(
+            pair.trainCandidates.map((train) => String(train.number))
+          );
+
+          routeResults = routeResults.filter((train) =>
+            allowedNumbers.has(String(train.number))
+          );
+        }
+
+        if (routeResults.length > 0) {
+          return res.status(200).json({
+            success: true,
+            data: routeResults
+          });
+        }
+      } catch {
+        // Try the next possible station pair.
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: []
+    });
   } catch (error) {
-    return res.status(502).json({
+    return res.status(error.status || 502).json({
       success: false,
-      error: "Unable to reach RailRadar right now."
+      error:
+        error.message ||
+        "Unable to search trains right now."
     });
   }
 }
