@@ -1,24 +1,12 @@
-# Gatipath v0.1
+# Gatipath
 
-A premium Indian train-status UI prototype.
+Gatipath is a one-page Indian train journey tracker.
 
-## Run locally
-1. Install Node.js 18+.
-2. In this folder run `npm install`.
-3. Run `npm run dev`.
-4. Open the local URL Vite prints.
+## Live data
 
-## Current state
-- Fully interactive prototype
-- Mock data for Himalayan Queen and Telangana Express
-- Search by name/number
-- Direction selection
-- Vertical journey timeline
-- Not-started/running/scheduled states
-- Boarding-station highlighting
-- Responsive mobile layout
+The app uses RailRadar through Vercel serverless functions. Keep `RAILRADAR_API_KEY` in Vercel Environment Variables; never put the key in frontend code.
 
-## Live API integration
-The UI is deliberately separated from the railway data source. A production version should use a server-side API layer and keep API keys off the browser. RailRadar currently documents a live train endpoint with current location, delay, route, ETA/ETD and exception fields; validate its commercial terms, reliability and quotas before production use.
+- `/api/search?q=Himalayan%20Queen` searches the RailRadar train directory.
+- `/api/train/14095` retrieves live status for a train number.
 
-Deployment configuration updated.
+If live data is unavailable, the app reports the error instead of showing fake live status.
