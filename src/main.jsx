@@ -313,31 +313,29 @@ function App() {
                </span>
 
                <div className="station-times">
-                 {s.arrival && (
-                   <span>
-                     <small>Arr</small> {s.arrival}
-                  </span>
-                )}
+  <div className="time-column">
+    <small>Arrival</small>
+    <strong>{s.arrival || "—"}</strong>
+    {s.actualArrival && (
+      <span>Actual {s.actualArrival}</span>
+    )}
+  </div>
 
-                 {s.departure && (
-                   <span>
-                     <small>Dep</small> {s.departure}
-                  </span>
-                )}
+  <div className="time-column">
+    <small>Departure</small>
+    <strong>{s.departure || "—"}</strong>
+    {s.actualDeparture && (
+      <span>Actual {s.actualDeparture}</span>
+    )}
+  </div>
 
-                {s.platform && (
-                  <span>
-                    <small>PF</small> {s.platform}
-                  </span>
-                )}
-              </div>
-
-              {(s.actualArrival || s.actualDeparture) && (
-                <div className="actual-times">
-                  {s.actualArrival && <span>Actual arrival {s.actualArrival}</span>}
-                  {s.actualDeparture && <span>Actual departure {s.actualDeparture}</span>}
-                </div>
-              )}
+  {s.platform && (
+    <div className="time-column platform-column">
+      <small>Platform</small>
+      <strong>{s.platform}</strong>
+    </div>
+  )}
+</div>
             </div>
             </div>
           })}
