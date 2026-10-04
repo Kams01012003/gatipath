@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
@@ -89,32 +89,53 @@ function App() {
   const [boarding, setBoarding] = useState("");
   const [loading, setLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
+  const searchCacheRef = useRef(new Map());
 
   useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2 || active) {
-      setResults([]);
-      return;
-    }
+  const q = query.trim();
 
-    const timer = setTimeout(async () => {
-      setSearching(true);
-      setSearchError("");
-      try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-        const body = await response.json();
-        if (!response.ok || !body.success) throw new Error(body.error || "Search unavailable");
-        setResults(body.data || []);
-      } catch (error) {
-        setResults([]);
-        setSearchError(error.message || "Search unavailable");
-      } finally {
-        setSearching(false);
+  if (q.length < 3 || active) {
+    setResults([]);
+    return;
+  }
+
+  const cached = searchCacheRef.current.get(q.toLowerCase());
+
+  if (cached) {
+    setResults(cached);
+    setSearchError("");
+    return;
+  }
+
+  const timer = setTimeout(async () => {
+    setSearching(true);
+    setSearchError("");
+
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(q)}`
+      );
+
+      const body = await response.json();
+
+      if (!response.ok || !body.success) {
+        throw new Error(body.error || "Search unavailable");
       }
-    }, 350);
 
-    return () => clearTimeout(timer);
-  }, [query, active]);
+      const data = body.data || [];
+
+      searchCacheRef.current.set(q.toLowerCase(), data);
+      setResults(data);
+    } catch (error) {
+      setResults([]);
+      setSearchError(error.message || "Search unavailable");
+    } finally {
+      setSearching(false);
+    }
+  }, 900);
+
+  return () => clearTimeout(timer);
+}, [query, active]);
 
   async function loadTrain(number) {
     setLoading(true);
