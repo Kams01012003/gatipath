@@ -10,3 +10,31 @@ button{cursor:pointer}.app{min-height:100vh}.nav{height:76px;display:flex;align-
 .timeline-head{display:flex;justify-content:space-between;align-items:end;margin:55px 0 15px}.timeline-head h3{font:600 30px "Space Grotesk";margin:5px 0}.updated{font-size:11px;color:#888}.updated:first-letter{color:#6ab97b}.timeline{position:relative;padding:5px 0}.timeline:before{content:"";position:absolute;left:20px;top:18px;bottom:18px;width:1px;background:#d4d2cb}.station{position:relative;display:grid;grid-template-columns:42px 1fr;min-height:88px}.rail{position:relative;z-index:1}.node{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#d4d2cb;color:#fff;font-size:10px;position:absolute;top:12px;left:12px}.completed .node{background:#222}.current .node{width:34px;height:34px;left:4px;top:3px;background:#b52a1d;box-shadow:0 0 0 8px #b52a1d18;font-size:16px}.boarding-station .station-content{background:#fff0ed;border:1px solid #edc3bc;border-radius:14px;padding:11px 15px;margin:-4px 0 8px}.station-content{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0 18px}.station-content h4{font:600 17px "Space Grotesk";margin:0}.station-state{display:block;text-transform:uppercase;letter-spacing:1px;font-size:8px;color:#aaa;margin-top:5px}.station-content>strong{font-size:14px;color:#555}.current .station-content h4{color:#b52a1d}.current .station-content{padding-bottom:23px}footer{border-top:1px solid #ddd9d1;margin-top:60px;padding-top:25px;display:flex;justify-content:space-between;color:#999;font-size:11px}footer span:first-child{font:600 15px "Space Grotesk";color:#222}
 @media(max-width:650px){.nav{height:64px;padding:0 20px}.nav-pill{display:none}.hero{padding:9vh 18px 15vh}.hero h1{font-size:59px;letter-spacing:-3px}.sub{font-size:15px}.search-wrap input{height:64px;font-size:15px;padding-left:53px}.search-icon{top:16px;left:20px}.direction h2{font-size:49px}.direction-grid{grid-template-columns:1fr}.journey-page{padding:30px 18px 60px}.train-heading{align-items:start;gap:15px}.train-heading h2{font-size:39px}.train-heading p{line-height:1.5}.share{padding:9px 12px}.status-card{display:block;padding:25px;min-height:0}.status-detail{text-align:left;margin-top:25px}.boarding{display:block}.boarding select{margin-top:14px;width:100%;max-width:none}.timeline-head{display:block}.updated{display:block;margin-top:10px}.station-content{gap:10px}.station-content>strong{white-space:nowrap}.direction-card strong{font-size:22px}}
 .search-status{max-width:720px;margin:14px auto 0;color:#888;font-size:13px}.loading-overlay{position:fixed;right:20px;bottom:20px;background:#171717;color:#fff;padding:12px 16px;border-radius:999px;font-size:12px;z-index:30;box-shadow:0 12px 30px #0002}.error-banner{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#fff0ed;border:1px solid #edc3bc;color:#8e2a20;padding:12px 18px;border-radius:999px;font-size:12px;z-index:30;box-shadow:0 12px 30px #0001}
+.station-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 8px;
+}
+
+.station-times span {
+  font-size: 13px;
+  color: #444;
+}
+
+.station-times small {
+  margin-right: 4px;
+  color: #888;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.actual-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #777;
+}
