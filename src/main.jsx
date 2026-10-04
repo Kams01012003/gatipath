@@ -11,6 +11,7 @@ function formatTime(iso) {
     timeZone: "Asia/Kolkata",
   }).format(new Date(iso));
 }
+
 function formatDelay(minutes) {
   if (!minutes || minutes === 0) return "On time";
 
@@ -60,9 +61,19 @@ function mapLiveTrain(payload) {
     if (stop.sequence === route.length) state = "Destination";
 
     const scheduled = stop.scheduledArrival || stop.scheduledDeparture;
+    const firstScheduled = route[0]?.scheduledDeparture || route[0]?.scheduledArrival;
+const dayNumber = scheduled && firstScheduled
+  ? Math.max(
+      Math.floor(
+        (new Date(scheduled) - new Date(firstScheduled)) / 86400000
+      ) + 1,
+      1
+    )
+  : 1;
     return {
       name: stop.stationName,
       time: formatTime(scheduled),
+      dayNumber,
       arrival: formatTime(stop.scheduledArrival),
       departure: formatTime(stop.scheduledDeparture),
       actualArrival: formatTime(stop.actualArrival),
@@ -290,55 +301,83 @@ function App() {
           <span className="updated">● {formatUpdated(active.updatedAt)} · Live RailRadar data</span>
         </div>
         <div className="timeline">
-          {active.stations.map((s, i) => {
-            const state = s.state.toLowerCase();
-            const isCurrent = state === "current";
-            const isBoard = s.name === boarding;
-            return <div className={`station ${isCurrent ? "current " : ""}${isBoard ? "boarding-station " : ""}${state === "completed" ? "completed " : ""}`} key={`${s.sequence}-${s.code}`}>
-              <div className="rail"><span className="node">{isCurrent ? "🚆" : state === "completed" ? "✓" : i === 0 || i === active.stations.length - 1 ? "●" : ""}</span></div>
-              <div className="station-content">
-                <div className="station-name">{s.name}</div>
+  {active.stations.map((s, i) => {
+    const state = s.state.toLowerCase();
+    const isCurrent = state === "current";
+    const isBoard = s.name === boarding;
+    const previousDay = i > 0 ? active.stations[i - 1].dayNumber : s.dayNumber;
+    const showDay = i > 0 && s.dayNumber !== previousDay;
 
-                <span className="station-state">
-                  {isBoard
-                    ? "YOUR STATION"
-                    : isCurrent
-                      ? "CURRENT LOCATION"
-                      : state === "completed"
-                        ? "DEPARTED"
-                        : s.state}
-                  {(isCurrent || state === "completed") && s.delay > 0
-                    ? ` · ${formatDelay(s.delay)}`
-                    : ""}
-               </span>
+    return (
+      <React.Fragment key={`${s.sequence}-${s.code}`}>
+        {showDay && (
+          <div className="day-divider">
+            <span>DAY {s.dayNumber}</span>
+          </div>
+        )}
 
-               <div className="station-times">
-  <div className="time-column">
-    <small>Arrival</small>
-    <strong>{s.arrival || "—"}</strong>
-    {s.actualArrival && (
-      <span>Actual {s.actualArrival}</span>
-    )}
-  </div>
+        <div
+          className={`station ${isCurrent ? "current " : ""}${isBoard ? "boarding-station " : ""}${state === "completed" ? "completed " : ""}`}
+        >
+          <div className="rail">
+            <span className="node">
+              {isCurrent
+                ? "🚆"
+                : state === "completed"
+                ? "✓"
+                : i === 0 || i === active.stations.length - 1
+                ? "●"
+                : ""}
+            </span>
+          </div>
 
-  <div className="time-column">
-    <small>Departure</small>
-    <strong>{s.departure || "—"}</strong>
-    {s.actualDeparture && (
-      <span>Actual {s.actualDeparture}</span>
-    )}
-  </div>
+          <div className="station-content">
+            <div className="station-name">
+              {s.name}
+              <span className="station-status">
+                {isBoard
+                  ? "YOUR STATION"
+                  : isCurrent
+                  ? "CURRENT LOCATION"
+                  : state === "completed"
+                  ? "DEPARTED"
+                  : s.state}
+                {(isCurrent || state === "completed") && s.delay > 0
+                  ? ` · ${formatDelay(s.delay)}`
+                  : ""}
+              </span>
+            </div>
 
-  {s.platform && (
-    <div className="time-column platform-column">
-      <small>Platform</small>
-      <strong>{s.platform}</strong>
-    </div>
-  )}
+            <div className="station-times">
+              <div className="time-column">
+                <small>ARRIVAL</small>
+                <strong>{s.arrival || "—"}</strong>
+                {s.actualArrival && (
+                  <span>Actual {s.actualArrival}</span>
+                )}
+              </div>
+
+              <div className="time-column">
+                <small>DEPARTURE</small>
+                <strong>{s.departure || "—"}</strong>
+                {s.actualDeparture && (
+                  <span>Actual {s.actualDeparture}</span>
+                )}
+              </div>
+
+              {s.platform && (
+                <div className="time-column platform-column">
+                  <small>PLATFORM</small>
+                  <strong>{s.platform}</strong>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </React.Fragment>
+    );
+  })}
 </div>
-            </div>
-            </div>
-          })}
         </div>
         <footer><span>Gatipath</span><span>Know where your train is.</span></footer>
       </section>
