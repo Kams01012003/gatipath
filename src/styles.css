@@ -290,3 +290,47 @@ button{cursor:pointer}.app{min-height:100vh}.nav{height:76px;display:flex;align-
 .search-wrap input {
   padding-right: 120px;
 }
+.rating-section {
+  margin: 56px auto 28px;
+  text-align: center;
+}
+
+.rating-title {
+  color: #777;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.rating-star {
+  border: 0;
+  background: transparent;
+  color: #d8d8d4;
+  font-size: 30px;
+  line-height: 1;
+  padding: 2px;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.rating-star:hover,
+.rating-star.selected {
+  color: #c83224;
+}
+
+.rating-star:hover {
+  transform: scale(1.08);
+}
+
+.rating-thanks {
+  margin-top: 10px;
+  color: #777;
+  font-size: 12px;
+}
