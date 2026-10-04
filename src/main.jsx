@@ -291,6 +291,7 @@ function App() {
             return <div className={`station ${isCurrent ? "current " : ""}${isBoard ? "boarding-station " : ""}${state === "completed" ? "completed " : ""}`} key={`${s.sequence}-${s.code}`}>
               <div className="rail"><span className="node">{isCurrent ? "🚆" : state === "completed" ? "✓" : i === 0 || i === active.stations.length - 1 ? "●" : ""}</span></div>
               <div className="station-content">
+              <div className="station-name">{s.name}</div>  
                 <span className="station-state">{isBoard ? "YOUR STATION" : isCurrent ? "CURRENT LOCATION" : state === "completed" ? "DEPARTED" : s.state}{(isCurrent || state === "completed") && s.delay > 0 ? ` · ${formatDelay(s.delay)}` : ""}</span>
                 <strong>{s.time}</strong>
               </div>
