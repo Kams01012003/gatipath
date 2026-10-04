@@ -48,8 +48,9 @@ function mapLiveTrain(payload) {
   const currentSequence = data.currentLocation?.sequence;
   
   const totalStations = route.length;
-const stationsRemaining =
-  currentSequence ? Math.max(totalStations - currentSequence, 0) : null;
+  const stationsRemaining = currentSequence
+    ? route.filter((stop) => stop.sequence > currentSequence).length
+    : null;
 
   const stations = route.map((stop) => {
     let state = "Upcoming";
@@ -62,6 +63,11 @@ const stationsRemaining =
     return {
       name: stop.stationName,
       time: formatTime(scheduled),
+      arrival: formatTime(stop.scheduledArrival),
+      departure: formatTime(stop.scheduledDeparture),
+      actualArrival: formatTime(stop.actualArrival),
+      actualDeparture: formatTime(stop.actualDeparture),
+      platform: stop.platform || null,
       state,
       code: stop.stationCode,
       sequence: stop.sequence,
@@ -291,9 +297,48 @@ function App() {
             return <div className={`station ${isCurrent ? "current " : ""}${isBoard ? "boarding-station " : ""}${state === "completed" ? "completed " : ""}`} key={`${s.sequence}-${s.code}`}>
               <div className="rail"><span className="node">{isCurrent ? "🚆" : state === "completed" ? "✓" : i === 0 || i === active.stations.length - 1 ? "●" : ""}</span></div>
               <div className="station-content">
-              <div className="station-name">{s.name}</div>  
-                <span className="station-state">{isBoard ? "YOUR STATION" : isCurrent ? "CURRENT LOCATION" : state === "completed" ? "DEPARTED" : s.state}{(isCurrent || state === "completed") && s.delay > 0 ? ` · ${formatDelay(s.delay)}` : ""}</span>
-                <strong>{s.time}</strong>
+                <div className="station-name">{s.name}</div>
+
+                <span className="station-state">
+                  {isBoard
+                    ? "YOUR STATION"
+                    : isCurrent
+                      ? "CURRENT LOCATION"
+                      : state === "completed"
+                        ? "DEPARTED"
+                        : s.state}
+                  {(isCurrent || state === "completed") && s.delay > 0
+                    ? ` · ${formatDelay(s.delay)}`
+                    : ""}
+               </span>
+
+               <div className="station-times">
+                 {s.arrival && (
+                   <span>
+                     <small>Arr</small> {s.arrival}
+                  </span>
+                )}
+
+                 {s.departure && (
+                   <span>
+                     <small>Dep</small> {s.departure}
+                  </span>
+                )}
+
+                {s.platform && (
+                  <span>
+                    <small>PF</small> {s.platform}
+                  </span>
+                )}
+              </div>
+
+              {(s.actualArrival || s.actualDeparture) && (
+                <div className="actual-times">
+                  {s.actualArrival && <span>Actual arrival {s.actualArrival}</span>}
+                  {s.actualDeparture && <span>Actual departure {s.actualDeparture}</span>}
+                </div>
+              )}
+            </div>
               </div>
             </div>;
           })}
