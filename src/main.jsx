@@ -298,7 +298,6 @@ function App() {
               )}
             </h3>
           </div>
-          <span className="updated">● {formatUpdated(active.updatedAt)} · Live RailRadar data</span>
         </div>
         <div className="timeline">
   {active.stations.map((s, i) => {
