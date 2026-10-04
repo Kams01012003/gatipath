@@ -378,7 +378,6 @@ function App() {
     );
   })}
 </div>
-        </div>
         <footer><span>Gatipath</span><span>Know where your train is.</span></footer>
       </section>
     </main>}
