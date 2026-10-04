@@ -11,6 +11,23 @@ function formatTime(iso) {
     timeZone: "Asia/Kolkata",
   }).format(new Date(iso));
 }
+function formatDelay(minutes) {
+  if (!minutes || minutes === 0) return "On time";
+
+  const value = Math.abs(Number(minutes));
+  const hours = Math.floor(value / 60);
+  const mins = value % 60;
+
+  if (hours > 0 && mins > 0) {
+    return `${hours} hr ${mins} min late`;
+  }
+
+  if (hours > 0) {
+    return `${hours} hr late`;
+  }
+
+  return `${mins} min late`;
+}
 
 function formatUpdated(iso) {
   if (!iso) return "Live status";
@@ -274,7 +291,7 @@ function App() {
             return <div className={`station ${isCurrent ? "current " : ""}${isBoard ? "boarding-station " : ""}${state === "completed" ? "completed " : ""}`} key={`${s.sequence}-${s.code}`}>
               <div className="rail"><span className="node">{isCurrent ? "🚆" : state === "completed" ? "✓" : i === 0 || i === active.stations.length - 1 ? "●" : ""}</span></div>
               <div className="station-content">
-                <div><h4>{s.name}</h4><span className="station-state">{isBoard ? "YOUR STATION" : isCurrent ? "CURRENT LOCATION" : state === "completed" ? "DEPARTED" : s.state}</span></div>
+                <span className="station-state">{isBoard ? "YOUR STATION" : isCurrent ? "CURRENT LOCATION" : state === "completed" ? "DEPARTED" : s.state}{(isCurrent || state === "completed") && s.delay > 0 ? ` · ${formatDelay(s.delay)}` : ""}</span>
                 <strong>{s.time}</strong>
               </div>
             </div>;
