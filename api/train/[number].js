@@ -26,6 +26,8 @@ export default async function handler(req, res) {
     if (String(req.query?.authoritative || "") === "true") {
       params.set("authoritative", "true");
     }
+    
+    params.set("haltsOnly", "true");
 
     const queryString = params.toString();
 
