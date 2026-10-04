@@ -339,8 +339,7 @@ function App() {
                 </div>
               )}
             </div>
-              </div>
-            </div>;
+            </div>
           })}
         </div>
         <footer><span>Gatipath</span><span>Know where your train is.</span></footer>
