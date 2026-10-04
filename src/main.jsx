@@ -44,7 +44,9 @@ function mapLiveTrain(payload) {
   const data = payload?.data;
   if (!data) return null;
 
-  const route = Array.isArray(data.route) ? data.route : [];
+  const route = Array.isArray(data.route)
+  ? data.route.filter((stop) => stop.isHalt !== false)
+  : [];
   const currentCode = data.currentLocation?.stationCode;
   const currentSequence = data.currentLocation?.sequence;
   
