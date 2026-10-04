@@ -132,6 +132,41 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
   const searchCacheRef = useRef(new Map());
+  const [listening, setListening] = useState(false);
+  const startVoiceSearch = () => {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Voice search is not supported in this browser.");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-IN";
+  recognition.interimResults = false;
+  recognition.continuous = false;
+
+  recognition.onstart = () => {
+    setListening(true);
+  };
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    setQuery(transcript);
+  };
+
+  recognition.onerror = () => {
+    setListening(false);
+  };
+
+  recognition.onend = () => {
+    setListening(false);
+  };
+
+  recognition.start();
+};
 
   useEffect(() => {
   const q = query.trim();
@@ -241,6 +276,14 @@ function App() {
         <div className="search-icon">⌕</div>
         <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
           placeholder="Search Himalayan Queen, Telangana Express, 14095…" />
+        <button
+  type="button"
+  className={`voice-button ${listening ? "listening" : ""}`}
+  onClick={startVoiceSearch}
+  aria-label="Search by voice"
+>
+  🎙️
+</button>
         {query && <button className="clear" onClick={() => setQuery("")}>×</button>}
       </div>
       {searching && <div className="search-status">Searching live train directory…</div>}
