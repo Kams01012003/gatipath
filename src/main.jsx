@@ -29,6 +29,10 @@ function mapLiveTrain(payload) {
   const route = Array.isArray(data.route) ? data.route : [];
   const currentCode = data.currentLocation?.stationCode;
   const currentSequence = data.currentLocation?.sequence;
+  
+  const totalStations = route.length;
+const stationsRemaining =
+  currentSequence ? Math.max(totalStations - currentSequence, 0) : null;
 
   const stations = route.map((stop) => {
     let state = "Upcoming";
@@ -64,6 +68,8 @@ function mapLiveTrain(payload) {
   return {
     number: data.trainNumber || data.train?.number,
     name: data.trainName || data.train?.name || "Train",
+    totalStations,
+    stationsRemaining,
     type: data.train?.type || data.train?.category || "Train",
     from: data.train?.source?.name || "Origin",
     to: data.train?.destination?.name || "Destination",
@@ -249,7 +255,15 @@ function App() {
         </div>
 
         <div className="timeline-head">
-          <div><span className="eyebrow">THE JOURNEY</span><h3>{active.stations.length} stations</h3></div>
+          <div>
+            <span className="eyebrow">THE JOURNEY</span>
+            <h3>
+              {active.totalStations} stations
+              {active.stationsRemaining !== null && (
+                <span> · {active.stationsRemaining} remaining</span>
+              )}
+            </h3>
+          </div>
           <span className="updated">● {formatUpdated(active.updatedAt)} · Live RailRadar data</span>
         </div>
         <div className="timeline">
