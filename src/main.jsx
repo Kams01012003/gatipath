@@ -133,6 +133,7 @@ function App() {
   const [liveError, setLiveError] = useState("");
   const searchCacheRef = useRef(new Map());
   const [listening, setListening] = useState(false);
+  const [rating, setRating] = useState(0);
   const startVoiceSearch = () => {
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -437,7 +438,28 @@ function App() {
     );
   })}
 </div>
-        <footer><span>Gatipath</span><span>Know where your train is.</span></footer>
+        
+        <div className="rating-section">
+  <div className="rating-title">How was your experience?</div>
+  <div className="rating-stars">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button
+        key={star}
+        type="button"
+        className={`rating-star ${star <= rating ? "selected" : ""}`}
+        onClick={() => setRating(star)}
+        aria-label={`${star} star${star > 1 ? "s" : ""}`}
+      >
+        ★
+      </button>
+    ))}
+  </div>
+  {rating > 0 && (
+    <div className="rating-thanks">Thanks for your feedback.</div>
+  )}
+</div>
+
+<footer><span>Gatipath</span><span>Know where your train is.</span></footer>
       </section>
     </main>}
 
