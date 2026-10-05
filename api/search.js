@@ -82,26 +82,55 @@ export default async function handler(req, res) {
       });
     }
 
-    /*
+        /*
      * 2. Direct train-name search.
      *
-     * Examples:
-     * Himalayan Queen
-     * Telangana Express
-     * Rajdhani Express
+     * Use RailRadar's compressed train directory because it
+     * includes train number, name, source and destination.
      */
-    const directTrainSearch = await railRadar(
-      `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
-        q
-      )}&limit=10`
+    const compressedBody = await railRadar(
+      "https://api.railradar.in/v1/lookup/trains/compressed"
     );
 
-    const directResults = normalizeResults(directTrainSearch?.data);
+    const compressedData =
+      typeof compressedBody?.data === "string"
+        ? compressedBody.data
+        : "";
 
-    if (directResults.length > 0) {
+    const searchText = q.toLowerCase();
+
+    const matchingTrains = compressedData
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [number, name, sourceCode, destinationCode] =
+          line.split("|");
+
+        return {
+          number: number?.trim() || "",
+          name: name?.trim() || "",
+          sourceCode: sourceCode?.trim() || "",
+          destinationCode: destinationCode?.trim() || ""
+        };
+      })
+      .filter(
+        (train) =>
+          train.number &&
+          train.name &&
+          train.name.toLowerCase().includes(searchText)
+      )
+      .slice(0, 10);
+
+    if (matchingTrains.length > 0) {
       return res.status(200).json({
         success: true,
-        data: directResults
+        data: matchingTrains.map((train) => ({
+          number: train.number,
+          name: train.name,
+          source: train.sourceCode,
+          destination: train.destinationCode
+        }))
       });
     }
 
