@@ -64,21 +64,71 @@ export default async function handler(req, res) {
   }
 
   try {
-    /*
+       /*
      * 1. Direct 5-digit train number search.
+     *
+     * Search the active and PRS train directories directly.
+     * This avoids relying on the generic train search endpoint,
+     * which may not return every valid train number.
      */
     const numberMatch = q.match(/\b\d{5}\b/);
 
     if (numberMatch) {
-      const body = await railRadar(
-        `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
-          numberMatch[0]
-        )}&limit=10`
+      const trainNumber = numberMatch[0];
+
+      const [compressedBody, compressedPrsBody] = await Promise.all([
+        railRadar(
+          "https://api.railradar.in/v1/lookup/trains/compressed"
+        ),
+        railRadar(
+          "https://api.railradar.in/v1/lookup/trains/prs/compressed"
+        )
+      ]);
+
+      function findTrainByNumber(data) {
+        if (typeof data !== "string") return null;
+
+        const line = data
+          .split("\n")
+          .map((item) => item.trim())
+          .find((item) => {
+            const number = item.split("|")[0]?.trim();
+            return number === trainNumber;
+          });
+
+        if (!line) return null;
+
+        const [number, name, sourceCode, destinationCode] =
+          line.split("|");
+
+        return {
+          number: number?.trim() || "",
+          name: name?.trim() || "",
+          source: sourceCode?.trim() || "",
+          destination: destinationCode?.trim() || ""
+        };
+      }
+
+      const activeTrain = findTrainByNumber(
+        compressedBody?.data
       );
+
+      const prsTrain = findTrainByNumber(
+        compressedPrsBody?.data
+      );
+
+      const train = activeTrain || prsTrain;
+
+      if (train) {
+        return res.status(200).json({
+          success: true,
+          data: [train]
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        data: normalizeResults(body?.data)
+        data: []
       });
     }
 
