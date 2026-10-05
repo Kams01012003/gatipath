@@ -65,72 +65,48 @@ export default async function handler(req, res) {
 
   try {
        /*
-     * 1. Direct 5-digit train number search.
-     *
-     * Search the active and PRS train directories directly.
-     * This avoids relying on the generic train search endpoint,
-     * which may not return every valid train number.
-     */
-    const numberMatch = q.match(/\b\d{5}\b/);
+ * 1. Direct 5-digit train number search.
+ *
+ * Use RailRadar's direct train-details endpoint instead
+ * of searching the large active/PRS train directories.
+ */
+const numberMatch = q.match(/\b\d{5}\b/);
 
-    if (numberMatch) {
-      const trainNumber = numberMatch[0];
+if (numberMatch) {
+  const trainNumber = numberMatch[0];
 
-      const [compressedBody, compressedPrsBody] = await Promise.all([
-        railRadar(
-          "https://api.railradar.in/v1/lookup/trains/compressed"
-        ),
-        railRadar(
-          "https://api.railradar.in/v1/lookup/trains/prs/compressed"
-        )
-      ]);
+  try {
+    const response = await railRadar(
+      `https://api.railradar.in/v1/legacy/trains/${trainNumber}?dataType=static`
+    );
 
-      function findTrainByNumber(data) {
-        if (typeof data !== "string") return null;
+    const train = response?.data?.train;
 
-        const line = data
-          .split("\n")
-          .map((item) => item.trim())
-          .find((item) => {
-            const number = item.split("|")[0]?.trim();
-            return number === trainNumber;
-          });
-
-        if (!line) return null;
-
-        const [number, name, sourceCode, destinationCode] =
-          line.split("|");
-
-        return {
-          number: number?.trim() || "",
-          name: name?.trim() || "",
-          source: sourceCode?.trim() || "",
-          destination: destinationCode?.trim() || ""
-        };
-      }
-
-      const activeTrain = findTrainByNumber(
-        compressedBody?.data
-      );
-
-      const prsTrain = findTrainByNumber(
-        compressedPrsBody?.data
-      );
-
-      const train = activeTrain || prsTrain;
-
-      if (train) {
-        return res.status(200).json({
-          success: true,
-          data: [train]
-        });
-      }
-
+    if (train) {
       return res.status(200).json({
         success: true,
-        data: []
+        data: [
+          {
+            number: train.number || trainNumber,
+            name: train.name || "",
+            source: train.sourceCode || "",
+            destination: train.destinationCode || ""
+          }
+        ]
       });
     }
+
+    return res.status(200).json({
+      success: true,
+      data: []
+    });
+  } catch (error) {
+    return res.status(502).json({
+      success: false,
+      error: "Unable to look up the train number right now."
+    });
+  }
+}
 
             /*
      * 2. Direct train-name search.
