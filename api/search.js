@@ -87,10 +87,18 @@ if (numberMatch) {
         success: true,
         data: [
           {
-            number: train.number || trainNumber,
-            name: train.name || "",
-            source: train.sourceCode || "",
-            destination: train.destinationCode || ""
+            number: train.number || train.trainNumber || trainNumber,
+name: train.name || train.trainName || "",
+source:
+  train.sourceCode ||
+  train.source?.code ||
+  train.source ||
+  "",
+destination:
+  train.destinationCode ||
+  train.destination?.code ||
+  train.destination ||
+  ""
           }
         ]
       });
