@@ -53,6 +53,40 @@ export default async function handler(req, res) {
       });
     }
 
+        if (
+      body?.success &&
+      body?.data &&
+      Array.isArray(body.data.route) &&
+      body.data.route.length === 0
+    ) {
+      try {
+        const staticUrl =
+          `https://api.railradar.in/v1/legacy/trains/${number}` +
+          `?dataType=static` +
+          (req.query?.date
+            ? `&journeyDate=${encodeURIComponent(String(req.query.date))}`
+            : "");
+
+        const staticResponse = await fetch(staticUrl, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Accept: "application/json"
+          }
+        });
+
+        if (staticResponse.ok) {
+          const staticBody = await staticResponse.json();
+          const staticRoute = staticBody?.data?.route;
+
+          if (Array.isArray(staticRoute) && staticRoute.length > 0) {
+            body.data.route = staticRoute;
+          }
+        }
+      } catch (fallbackError) {
+        // Keep the original live response if static route lookup fails.
+      }
+    }
+
     return res.status(200).json(body);
   } catch (error) {
     return res.status(502).json({
