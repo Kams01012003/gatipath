@@ -82,43 +82,71 @@ export default async function handler(req, res) {
       });
     }
 
-        /*
+            /*
      * 2. Direct train-name search.
      *
-     * Use RailRadar's compressed train directory because it
-     * includes train number, name, source and destination.
+     * Search both active trains and the PRS reserved-train
+     * directory so services such as Himalayan Queen 14095/14096
+     * are not missed.
      */
-    const compressedBody = await railRadar(
-      "https://api.railradar.in/v1/lookup/trains/compressed"
-    );
+
+    const [compressedBody, compressedPrsBody] = await Promise.all([
+      railRadar(
+        "https://api.railradar.in/v1/lookup/trains/compressed"
+      ),
+      railRadar(
+        "https://api.railradar.in/v1/lookup/trains/prs/compressed"
+      )
+    ]);
 
     const compressedData =
       typeof compressedBody?.data === "string"
         ? compressedBody.data
         : "";
 
+    const compressedPrsData =
+      typeof compressedPrsBody?.data === "string"
+        ? compressedPrsBody.data
+        : "";
+
     const searchText = q.toLowerCase();
 
-    const matchingTrains = compressedData
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const [number, name, sourceCode, destinationCode] =
-          line.split("|");
+    function parseCompressedTrains(data) {
+      return data
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [number, name, sourceCode, destinationCode] =
+            line.split("|");
 
-        return {
-          number: number?.trim() || "",
-          name: name?.trim() || "",
-          sourceCode: sourceCode?.trim() || "",
-          destinationCode: destinationCode?.trim() || ""
-        };
-      })
+          return {
+            number: number?.trim() || "",
+            name: name?.trim() || "",
+            sourceCode: sourceCode?.trim() || "",
+            destinationCode: destinationCode?.trim() || ""
+          };
+        })
+        .filter(
+          (train) =>
+            train.number &&
+            train.name &&
+            train.name.toLowerCase().includes(searchText)
+        );
+    }
+
+    const activeMatches = parseCompressedTrains(compressedData);
+    const prsMatches = parseCompressedTrains(compressedPrsData);
+
+    const matchingTrains = [
+      ...activeMatches,
+      ...prsMatches
+    ]
       .filter(
-        (train) =>
-          train.number &&
-          train.name &&
-          train.name.toLowerCase().includes(searchText)
+        (train, index, array) =>
+          array.findIndex(
+            (item) => item.number === train.number
+          ) === index
       )
       .slice(0, 10);
 
