@@ -266,7 +266,57 @@ if (numberMatch) {
     } catch {
       // Continue to route search if the PRS directory is unavailable.
     }
-    
+    /*
+ * 2c. Generic RailRadar train search fallback.
+ *
+ * RailRadar's dedicated search endpoint can find trains by
+ * official train name or 5-digit train number even when the
+ * compressed directories do not contain the train.
+ */
+try {
+  const genericBody = await railRadar(
+    `https://api.railradar.in/v1/lookup/search/trains?q=${encodeURIComponent(
+      searchText
+    )}&limit=10`
+  );
+
+  const genericResults = normalizeResults(genericBody?.data);
+
+  const genericMatches = genericResults.filter((train) => {
+    const name = String(train.name || "").toLowerCase();
+    const number = String(train.number || "");
+    return (
+      name.includes(searchText) ||
+      number.includes(searchText)
+    );
+  });
+
+  const combinedMatches = [
+    ...matchingTrains,
+    ...genericMatches
+  ]
+    .filter(
+      (train, index, array) =>
+        array.findIndex(
+          (item) => String(item.number) === String(train.number)
+        ) === index
+    )
+    .slice(0, 10);
+
+  if (combinedMatches.length > 0) {
+    return res.status(200).json({
+      success: true,
+      data: combinedMatches.map((train) => ({
+        number: train.number,
+        name: train.name,
+        source: train.source || "",
+        destination: train.destination || ""
+      }))
+    });
+  }
+} catch {
+  // Continue to route search if the generic train search is unavailable.
+}
     /*
      * 3. Route search.
      *
