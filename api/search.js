@@ -184,18 +184,90 @@ destination:
       )
       .slice(0, 10);
 
-    if (matchingTrains.length > 0) {
-      return res.status(200).json({
-        success: true,
-        data: matchingTrains.map((train) => ({
-          number: train.number,
-          name: train.name,
-          source: train.sourceCode,
-          destination: train.destinationCode
-        }))
-      });
-    }
+    if (matchingTrains.length >= 10) {
+  return res.status(200).json({
+    success: true,
+    data: matchingTrains.map((train) => ({
+      number: train.number,
+      name: train.name,
+      source: train.sourceCode,
+      destination: train.destinationCode
+    }))
+  });
+}
 
+        /*
+     * 2b. Full PRS directory fallback.
+     *
+     * Some reserved trains may not appear in the compressed
+     * PRS stream. Use the full PRS directory as a fallback.
+     */
+    try {
+      const prsDirectoryBody = await railRadar(
+        "https://api.railradar.in/v1/lookup/trains/prs"
+      );
+
+      const prsDirectory =
+        prsDirectoryBody?.data &&
+        typeof prsDirectoryBody.data === "object"
+          ? prsDirectoryBody.data
+          : {};
+
+      const prsMatches = Object.entries(prsDirectory)
+        .filter(([number, train]) => {
+          const name =
+            typeof train === "string"
+              ? train
+              : train?.name || "";
+
+          return (
+            number &&
+            name &&
+            name.toLowerCase().includes(searchText)
+          );
+        })
+        .slice(0, 10)
+        .map(([number, train]) => {
+          const name =
+            typeof train === "string"
+              ? train
+              : train?.name || "";
+
+          return {
+            number,
+            name,
+            sourceCode: "",
+            destinationCode: ""
+          };
+        });
+
+      if (prsMatches.length > 0) {
+  const combinedMatches = [
+    ...matchingTrains,
+    ...prsMatches
+  ]
+    .filter(
+      (train, index, array) =>
+        array.findIndex(
+          (item) => item.number === train.number
+        ) === index
+    )
+    .slice(0, 10);
+
+  return res.status(200).json({
+    success: true,
+    data: combinedMatches.map((train) => ({
+            number: train.number,
+            name: train.name,
+            source: train.sourceCode,
+            destination: train.destinationCode
+          }))
+        });
+      }
+    } catch {
+      // Continue to route search if the PRS directory is unavailable.
+    }
+    
     /*
      * 3. Route search.
      *
