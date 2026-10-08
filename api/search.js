@@ -88,31 +88,30 @@ if (numberMatch) {
         data: [
           {
             number: train.number || train.trainNumber || trainNumber,
-name: train.name || train.trainName || "",
-source:
-  train.sourceCode ||
-  train.source?.code ||
-  train.source ||
-  "",
-destination:
-  train.destinationCode ||
-  train.destination?.code ||
-  train.destination ||
-  ""
+            name: train.name || train.trainName || "",
+            source:
+              train.sourceCode ||
+              train.source?.code ||
+              train.source ||
+              "",
+            destination:
+              train.destinationCode ||
+              train.destination?.code ||
+              train.destination ||
+              ""
           }
         ]
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: []
-    });
+    console.warn(
+      `Train ${trainNumber} not found in direct lookup. Continuing with other searches.`
+    );
   } catch (error) {
-    return res.status(502).json({
-      success: false,
-      error: "Unable to look up the train number right now."
-    });
+    console.warn(
+      `Direct lookup for ${trainNumber} failed. Continuing with other searches.`,
+      error.message
+    );
   }
 }
 
