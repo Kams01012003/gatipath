@@ -226,7 +226,10 @@ if (numberMatch) {
           return (
             number &&
             name &&
-            name.toLowerCase().includes(searchText)
+            (
+  name.toLowerCase().includes(searchText) ||
+  String(number).includes(searchText)
+)
           );
         })
         .slice(0, 10)
