@@ -160,12 +160,16 @@ if (numberMatch) {
             destinationCode: destinationCode?.trim() || ""
           };
         })
-        .filter(
-          (train) =>
-            train.number &&
-            train.name &&
-            train.name.toLowerCase().includes(searchText)
-        );
+        
+.filter(
+  (train) =>
+    train.number &&
+    train.name &&
+    (
+      train.name.toLowerCase().includes(searchText) ||
+      train.number.includes(searchText)
+    )
+);
     }
 
     const activeMatches = parseCompressedTrains(compressedData);
@@ -183,7 +187,7 @@ if (numberMatch) {
       )
       .slice(0, 10);
 
-    if (matchingTrains.length >= 10) {
+    if (matchingTrains.length > 0) {
   return res.status(200).json({
     success: true,
     data: matchingTrains.map((train) => ({
