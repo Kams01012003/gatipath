@@ -276,7 +276,7 @@ function App() {
       <div className="search-wrap">
         <div className="search-icon">⌕</div>
         <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
-          placeholder="Search Himalayan Queen, Telangana Express, 14095…" />
+          placeholder="Train number or name" />
         <button
   type="button"
   className={`voice-button ${listening ? "listening" : ""}`}
@@ -312,10 +312,6 @@ function App() {
         </button>)}
       </div>}
       {!searching && query.length >= 2 && !results.length && !searchError && <div className="search-status">No matching trains found.</div>}
-      <div className="examples">
-        <span>Try</span>
-        {["Himalayan Queen", "Telangana Express", "14095"].map(x => <button key={x} onClick={() => setQuery(x)}>{x}</button>)}
-      </div>
     </main> :
     <main id="journey" className="journey-page">
       <section className="status-page">
