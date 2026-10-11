@@ -324,6 +324,45 @@ try {
 } catch {
   // Continue to route search if the generic train search is unavailable.
 }
+    
+    /*
+     * 2d. NTES train directory fallback.
+     * Search the complete NTES train-number/name mapping.
+     */
+    try {
+      const ntesBody = await railRadar(
+        "https://api.railradar.in/v1/lookup/trains/ntes"
+      );
+
+      const ntesDirectory =
+        ntesBody?.data &&
+        typeof ntesBody.data === "object" &&
+        !Array.isArray(ntesBody.data)
+          ? ntesBody.data
+          : {};
+
+      const ntesMatches = Object.entries(ntesDirectory)
+        .filter(([number, name]) =>
+          String(number).toLowerCase().includes(searchText) ||
+          String(name).toLowerCase().includes(searchText)
+        )
+        .slice(0, 10)
+        .map(([number, name]) => ({
+          number,
+          name: String(name),
+          source: "",
+          destination: ""
+        }));
+
+      if (ntesMatches.length > 0) {
+        return res.status(200).json({
+          success: true,
+          data: ntesMatches
+        });
+      }
+    } catch (error) {
+      console.warn("NTES directory search failed:", error.message);
+    }
     /*
      * 3. Route search.
      *
