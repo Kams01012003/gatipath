@@ -40,6 +40,10 @@ function formatUpdated(iso) {
   }).format(new Date(iso))}`;
 }
 
+function isAbortError(error) {
+  return error?.name === "AbortError";
+}
+
 function mapLiveTrain(payload) {
   const data = payload?.data;
   if (!data) return null;
@@ -57,10 +61,11 @@ function mapLiveTrain(payload) {
 
   const stations = route.map((stop) => {
     let state = "Upcoming";
+    if (stop.sequence === 1) state = "Origin";
+    else if (stop.sequence === route.length) state = "Destination";
+
     if (stop.status === "departed" || stop.status === "arrived") state = "Completed";
     if (stop.sequence === currentSequence || stop.stationCode === currentCode) state = "Current";
-    if (stop.sequence === 1) state = "Origin";
-    if (stop.sequence === route.length) state = "Destination";
 
     const scheduled = stop.scheduledArrival || stop.scheduledDeparture;
     const firstScheduled = route[0]?.scheduledDeparture || route[0]?.scheduledArrival;
@@ -92,9 +97,9 @@ const dayNumber = scheduled && firstScheduled
   let state = "scheduled";
   if (status.includes("cancel")) state = "cancelled";
   else if (status.includes("complete") || status.includes("arrived") || status === "terminated") state = "completed";
-  else if (status === "running" || data.isLive) state = "running";
   else if (status === "delayed") state = "delayed";
-  else if (status === "scheduled" || !status) state = "scheduled";
+  else if (status === "scheduled") state = "scheduled";
+  else if (status === "running") state = "running";
 
   const currentStation =
     data.currentLocation?.stationName ||
@@ -132,6 +137,15 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
   const searchCacheRef = useRef(new Map());
+  const skipSearchRef = useRef(null);
+  const loadedTrainRef = useRef(null);
+  const inFlightTrainRef = useRef(null);
+  const loadAbortRef = useRef(null);
+  const loadRequestRef = useRef(0);
+  const scrollTimerRef = useRef(null);
+  const searchAbortRef = useRef(null);
+  const searchTimerRef = useRef(null);
+  const searchRequestRef = useRef(0);
   const [listening, setListening] = useState(false);
   const [rating, setRating] = useState(0);
   const startVoiceSearch = () => {
@@ -169,86 +183,254 @@ function App() {
   recognition.start();
 };
 
-  useEffect(() => {
-  const q = query.trim();
-
-  if (q.length < 3 || active) {
-    setResults([]);
-    return;
-  }
-
-  const cached = searchCacheRef.current.get(q.toLowerCase());
-
-  if (cached) {
-    setResults(cached);
-    setSearchError("");
-    return;
-  }
-
-  const timer = setTimeout(async () => {
-    setSearching(true);
-    setSearchError("");
-
-    try {
-      const response = await fetch(
-        `/api/search?q=${encodeURIComponent(q)}`
-      );
-
-      const body = await response.json();
-
-      if (!response.ok || !body.success) {
-        throw new Error(body.error || "Search unavailable");
-      }
-
-      const data = body.data || [];
-
-      searchCacheRef.current.set(q.toLowerCase(), data);
-      setResults(data);
-    } catch (error) {
-      setResults([]);
-      setSearchError(error.message || "Search unavailable");
-    } finally {
-      setSearching(false);
-    }
-  }, 900);
-
-  return () => clearTimeout(timer);
-}, [query, active]);
-
-  async function loadTrain(number) {
-    setLoading(true);
-    setLiveError("");
-    try {
-      const response = await fetch(`/api/train/${number}`);
-      const body = await response.json();
-      if (!response.ok || !body.success) throw new Error(body.error || "Live status unavailable");
-      const train = mapLiveTrain(body);
-      if (!train) throw new Error("Live status unavailable");
-      setActive(train);
-      setBoarding("");
-      setTimeout(() => document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" }), 50);
-    } catch (error) {
-      setLiveError(error.message || "Live status unavailable");
-    } finally {
-      setLoading(false);
+  function cancelScheduledScroll() {
+    if (scrollTimerRef.current) {
+      clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = null;
     }
   }
 
-  function choose(t) {
-    setSelected(t);
-    setDirection(null);
-    setResults([]);
-    setLiveError("");
-    loadTrain(t.number);
+  function cancelTrainLoad() {
+    loadRequestRef.current += 1;
+    inFlightTrainRef.current = null;
+    cancelScheduledScroll();
+    if (loadAbortRef.current) {
+      loadAbortRef.current.abort();
+      loadAbortRef.current = null;
+    }
   }
 
-  function reset() {
+  function cancelTrainSearch() {
+    searchRequestRef.current += 1;
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = null;
+    }
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
+      searchAbortRef.current = null;
+    }
+  }
+
+  function clearTrainSelection() {
+    cancelTrainLoad();
+    cancelTrainSearch();
+    skipSearchRef.current = null;
+    loadedTrainRef.current = null;
     setSelected(null);
     setDirection(null);
     setActive(null);
     setQuery("");
     setBoarding("");
+    setResults([]);
+    setSearchError("");
     setLiveError("");
+    setLoading(false);
+    setSearching(false);
+  }
+
+  useEffect(() => {
+    const q = query.trim();
+
+    if (skipSearchRef.current !== null && q === skipSearchRef.current) {
+      return;
+    }
+
+    if (skipSearchRef.current !== null) {
+      skipSearchRef.current = null;
+    }
+
+    if (q.length < 3 || active) {
+      setResults([]);
+      setSearchError("");
+      setSearching(false);
+      return;
+    }
+
+    const cacheKey = q.toLowerCase();
+    const cached = searchCacheRef.current.get(cacheKey);
+
+    if (cached) {
+      setResults(cached);
+      setSearchError("");
+      setSearching(false);
+      return;
+    }
+
+    const requestId = ++searchRequestRef.current;
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    setSearching(false);
+    setSearchError("");
+
+    const timer = setTimeout(async () => {
+      if (requestId !== searchRequestRef.current) return;
+
+      setSearching(true);
+      setSearchError("");
+
+      try {
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(q)}`,
+          { signal: controller.signal }
+        );
+
+        const body = await response.json();
+
+        if (requestId !== searchRequestRef.current) return;
+
+        if (!response.ok || !body.success) {
+          throw new Error(body.error || "Search unavailable");
+        }
+
+        const data = body.data || [];
+
+        searchCacheRef.current.set(cacheKey, data);
+        if (requestId !== searchRequestRef.current) return;
+        setResults(data);
+      } catch (error) {
+        if (requestId !== searchRequestRef.current) return;
+        if (isAbortError(error)) return;
+        setResults([]);
+        setSearchError(error.message || "Search unavailable");
+      } finally {
+        if (requestId === searchRequestRef.current) {
+          setSearching(false);
+        }
+      }
+    }, 900);
+
+    searchTimerRef.current = timer;
+
+    return () => {
+      clearTimeout(timer);
+      if (searchTimerRef.current === timer) {
+        searchTimerRef.current = null;
+      }
+      controller.abort();
+      if (searchAbortRef.current === controller) {
+        searchAbortRef.current = null;
+      }
+      if (searchRequestRef.current === requestId) {
+        searchRequestRef.current += 1;
+      }
+    };
+  }, [query, active]);
+
+  async function loadTrain(number) {
+    cancelTrainLoad();
+
+    const requestId = loadRequestRef.current;
+    const trainNumber = String(number);
+    if (loadedTrainRef.current !== trainNumber) {
+      setActive(null);
+      loadedTrainRef.current = null;
+    }
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+    inFlightTrainRef.current = trainNumber;
+
+    setLoading(true);
+    setLiveError("");
+
+    try {
+      const response = await fetch(`/api/train/${trainNumber}`, {
+        signal: controller.signal,
+      });
+      const body = await response.json();
+      if (requestId !== loadRequestRef.current) return;
+      if (!response.ok || !body.success) throw new Error(body.error || "Live status unavailable");
+      const train = mapLiveTrain(body);
+      if (!train) throw new Error("Live status unavailable");
+      if (requestId !== loadRequestRef.current) return;
+
+      setActive(train);
+      loadedTrainRef.current = trainNumber;
+      inFlightTrainRef.current = null;
+      setBoarding("");
+      scrollTimerRef.current = setTimeout(() => {
+        if (requestId !== loadRequestRef.current) return;
+        scrollTimerRef.current = null;
+        document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    } catch (error) {
+      if (requestId !== loadRequestRef.current) return;
+      if (isAbortError(error)) return;
+      loadedTrainRef.current = null;
+      inFlightTrainRef.current = null;
+      setLiveError(error.message || "Live status unavailable");
+    } finally {
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+        if (loadAbortRef.current === controller) {
+          loadAbortRef.current = null;
+        }
+      }
+    }
+  }
+
+  useEffect(() => {
+    function syncFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const rawTrain = params.get("train");
+      const trainParam = rawTrain?.trim() || "";
+
+      if (!/^\d{5}$/.test(trainParam)) {
+        if (rawTrain !== null) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("train");
+          window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+        }
+        clearTrainSelection();
+        return;
+      }
+
+      if (loadedTrainRef.current === trainParam && inFlightTrainRef.current == null) {
+        return;
+      }
+
+      if (inFlightTrainRef.current === trainParam) {
+        return;
+      }
+
+      cancelTrainSearch();
+      setResults([]);
+      setSearchError("");
+      setSearching(false);
+      skipSearchRef.current = trainParam;
+      setQuery(trainParam);
+      loadTrain(trainParam);
+    }
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => {
+      window.removeEventListener("popstate", syncFromUrl);
+      cancelTrainLoad();
+      cancelTrainSearch();
+    };
+  }, []);
+
+  function choose(t) {
+    cancelTrainSearch();
+    skipSearchRef.current = query.trim();
+    setSelected(t);
+    setDirection(null);
+    setResults([]);
+    setSearchError("");
+    setSearching(false);
+    setLiveError("");
+    const url = new URL(window.location.href);
+    url.searchParams.set("train", t.number);
+    window.history.pushState(null, "", url.pathname + url.search);
+    loadTrain(t.number);
+  }
+
+  function reset() {
+    clearTrainSelection();
+    const url = new URL(window.location.href);
+    url.searchParams.delete("train");
+    window.history.pushState(null, "", url.pathname + (url.search ? url.search : ""));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
