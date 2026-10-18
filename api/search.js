@@ -21,8 +21,32 @@ export default async function handler(req, res) {
     Accept: "application/json"
   };
 
+  const quotaMessage =
+    "Train search is temporarily unavailable because the data provider has reached its request limit. Please try again later.";
+  let quotaExceeded = false;
+
+  function quotaError() {
+    const error = new Error(quotaMessage);
+    error.status = 429;
+    return error;
+  }
+
+  function throwIfQuota(error) {
+    if (error?.status === 429) throw error;
+  }
+
   async function railRadar(url) {
+    if (quotaExceeded) {
+      throw quotaError();
+    }
+
     const response = await fetch(url, { headers });
+
+    if (response.status === 429) {
+      quotaExceeded = true;
+      throw quotaError();
+    }
+
     const body = await response.json();
 
     if (!response.ok) {
@@ -108,6 +132,7 @@ if (numberMatch) {
       `Train ${trainNumber} not found in direct lookup. Continuing with other searches.`
     );
   } catch (error) {
+    throwIfQuota(error);
     console.warn(
       `Direct lookup for ${trainNumber} failed. Continuing with other searches.`,
       error.message
@@ -270,7 +295,8 @@ if (numberMatch) {
           }))
         });
       }
-    } catch {
+    } catch (error) {
+      throwIfQuota(error);
       // Continue to route search if the PRS directory is unavailable.
     }
     /*
@@ -321,7 +347,8 @@ try {
       }))
     });
   }
-} catch {
+} catch (error) {
+  throwIfQuota(error);
   // Continue to route search if the generic train search is unavailable.
 }
     
@@ -361,6 +388,7 @@ try {
         });
       }
     } catch (error) {
+      throwIfQuota(error);
       console.warn("NTES directory search failed:", error.message);
     }
     /*
@@ -435,7 +463,8 @@ try {
             routeText: suffix
           });
         }
-      } catch {
+      } catch (error) {
+        throwIfQuota(error);
         // Continue searching.
       }
 
@@ -454,7 +483,8 @@ try {
             routeText: prefix
           });
         }
-      } catch {
+      } catch (error) {
+        throwIfQuota(error);
         // Continue searching.
       }
     }
@@ -570,21 +600,25 @@ try {
         }
 
         if (routeResults.length > 0) {
+          if (quotaExceeded) throw quotaError();
           return res.status(200).json({
             success: true,
             data: routeResults
           });
         }
-      } catch {
+      } catch (error) {
+        throwIfQuota(error);
         // Try the next possible station pair.
       }
     }
 
+    if (quotaExceeded) throw quotaError();
     return res.status(200).json({
       success: true,
       data: []
     });
   } catch (error) {
+    if (quotaExceeded) error = quotaError();
     return res.status(error.status || 502).json({
       success: false,
       error:
