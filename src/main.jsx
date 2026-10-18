@@ -12,10 +12,28 @@ function formatTime(iso) {
   }).format(new Date(iso));
 }
 
-function formatDelay(minutes) {
-  if (!minutes || minutes === 0) return "On time";
+function parseDelay(value) {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || value < 0) return null;
+    return value;
+  }
 
-  const value = Math.abs(Number(minutes));
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+    const number = Number(trimmed);
+    if (!Number.isFinite(number)) return null;
+    return number;
+  }
+
+  return null;
+}
+
+function formatDelay(minutes) {
+  const value = parseDelay(minutes);
+  if (value == null) return "Delay unavailable";
+  if (value === 0) return "On time";
+
   const hours = Math.floor(value / 60);
   const mins = value % 60;
 
@@ -89,7 +107,7 @@ const dayNumber = scheduled && firstScheduled
       state,
       code: stop.stationCode,
       sequence: stop.sequence,
-      delay: stop.delayArrival ?? stop.delayDeparture ?? 0,
+      delay: parseDelay(stop.delayArrival ?? stop.delayDeparture),
     };
   });
 
@@ -117,7 +135,7 @@ const dayNumber = scheduled && firstScheduled
     fromCode: data.train?.source?.code,
     toCode: data.train?.destination?.code,
     state,
-    delay: Number(data.delayMinutes || 0),
+    delay: parseDelay(data.delayMinutes),
     current: currentStation,
     next: data.nextHalt?.stationName || null,
     updatedAt: data.lastUpdatedAt || payload?.meta?.timestamp,
@@ -512,9 +530,9 @@ function App() {
             <span className="live-dot"></span>
             <div><small>TRAIN STATUS</small><h3>{statusText}</h3></div>
           </div>
-          {active.state === "running" && <div className="status-detail"><b>{active.current || "On route"}</b><span>{active.delay > 0 ? `${active.delay} min late` : "Running on time"}{active.next ? ` · Next: ${active.next}` : ""}</span></div>}
+          {active.state === "running" && <div className="status-detail"><b>{active.current || "On route"}</b><span>{formatDelay(active.delay)}{active.next ? ` · Next: ${active.next}` : ""}</span></div>}
           {active.state === "scheduled" && <div className="status-detail"><b>{scheduledDeparture}</b><span>Scheduled departure from {active.from}</span></div>}
-          {active.state === "delayed" && <div className="status-detail"><b>{active.delay} min late</b><span>{active.current || "Live status available"}</span></div>}
+          {active.state === "delayed" && <div className="status-detail"><b>{formatDelay(active.delay)}</b><span>{active.current || "Live status available"}</span></div>}
           {active.state === "completed" && <div className="status-detail"><b>{active.to}</b><span>Journey completed</span></div>}
           {active.state === "cancelled" && <div className="status-detail"><b>Cancelled</b><span>Check railway advisories before travelling</span></div>}
         </div>
