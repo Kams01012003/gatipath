@@ -1,6 +1,112 @@
+import { isLocalMockEnabled, mockSearchResponse } from "./mockTrains.js";
+
+function identityText(...values) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function readTrainIdentity(source, fallbackNumber = "") {
+  if (typeof source === "string" || typeof source === "number") {
+    const text = identityText(source);
+    if (/^\d{5}$/.test(text)) {
+      return { number: text, name: "" };
+    }
+    return { number: identityText(fallbackNumber), name: text };
+  }
+
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return { number: identityText(fallbackNumber), name: "" };
+  }
+
+  const nested =
+    source.train && typeof source.train === "object" && !Array.isArray(source.train)
+      ? source.train
+      : null;
+
+  return {
+    number: identityText(
+      source.number,
+      source.trainNumber,
+      nested?.number,
+      nested?.trainNumber,
+      fallbackNumber
+    ),
+    name: identityText(
+      source.name,
+      source.trainName,
+      nested?.name,
+      nested?.trainName
+    ),
+  };
+}
+
+function stationLabel({ name, station, code } = {}) {
+  const objectName =
+    station && typeof station === "object"
+      ? identityText(station.name, station.stationName)
+      : "";
+  const explicitName = identityText(name, objectName);
+  if (explicitName) return explicitName;
+  if (typeof station === "string" && station.trim()) return station.trim();
+  const objectCode =
+    station && typeof station === "object"
+      ? identityText(station.code, station.stationCode)
+      : "";
+  return identityText(code, objectCode);
+}
+
+function stationFields(record) {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    return { source: "", destination: "" };
+  }
+
+  return {
+    source: stationLabel({
+      name: record.sourceName,
+      station: record.source,
+      code: record.sourceCode,
+    }),
+    destination: stationLabel({
+      name: record.destinationName,
+      station: record.destination,
+      code: record.destinationCode,
+    }),
+  };
+}
+
+function trainsFromDirectory(data) {
+  if (Array.isArray(data)) {
+    return data.map((item) => ({
+      ...readTrainIdentity(item),
+      ...stationFields(item),
+    }));
+  }
+
+  if (data && typeof data === "object") {
+    return Object.entries(data).map(([key, value]) => ({
+      ...readTrainIdentity(value, key),
+      ...stationFields(value),
+    }));
+  }
+
+  return [];
+}
+
 export default async function handler(req, res) {
-  const apiKey = process.env.RAILRADAR_API_KEY;
   const q = String(req.query?.q || "").trim();
+
+  if (isLocalMockEnabled()) {
+    return res.status(200).json(mockSearchResponse(q));
+  }
+
+  const apiKey = process.env.RAILRADAR_API_KEY;
 
   if (!apiKey) {
     return res.status(500).json({
@@ -73,17 +179,17 @@ export default async function handler(req, res) {
     if (!Array.isArray(results)) return [];
 
     return results
-      .map((item) => ({
-        ...item,
-        source:
-          typeof item.source === "string"
-            ? item.source
-            : item.source?.name || "",
-        destination:
-          typeof item.destination === "string"
-            ? item.destination
-            : item.destination?.name || ""
-      }))
+      .map((item) => {
+        const identity = readTrainIdentity(item);
+        const stations = stationFields(item);
+        return {
+          ...item,
+          number: identity.number,
+          name: identity.name,
+          source: stations.source,
+          destination: stations.destination
+        };
+      })
       .filter((item) => item.number);
   }
 
@@ -104,25 +210,28 @@ if (numberMatch) {
       `https://api.railradar.in/v1/legacy/trains/${trainNumber}?dataType=static`
     );
 
-    const train = response?.data?.train;
+    const payload = response?.data;
+    const train = payload?.train;
+    const identity = readTrainIdentity(payload, trainNumber);
 
-    if (train) {
+    if (identity.name) {
+      const named = train && typeof train === "object" ? train : {};
       return res.status(200).json({
         success: true,
         data: [
           {
-            number: train.number || train.trainNumber || trainNumber,
-            name: train.name || train.trainName || "",
-            source:
-              train.sourceCode ||
-              train.source?.code ||
-              train.source ||
-              "",
-            destination:
-              train.destinationCode ||
-              train.destination?.code ||
-              train.destination ||
-              ""
+            number: identity.number || trainNumber,
+            name: identity.name,
+            source: stationLabel({
+              name: named.sourceName,
+              station: named.source,
+              code: named.sourceCode,
+            }),
+            destination: stationLabel({
+              name: named.destinationName,
+              station: named.destination,
+              code: named.destinationCode,
+            })
           }
         ]
       });
@@ -189,7 +298,6 @@ if (numberMatch) {
 .filter(
   (train) =>
     train.number &&
-    train.name &&
     (
       train.name.toLowerCase().includes(searchText) ||
       train.number.includes(searchText)
@@ -235,42 +343,25 @@ if (numberMatch) {
         "https://api.railradar.in/v1/lookup/trains/prs"
       );
 
-      const prsDirectory =
-        prsDirectoryBody?.data &&
-        typeof prsDirectoryBody.data === "object"
-          ? prsDirectoryBody.data
-          : {};
-
-      const prsMatches = Object.entries(prsDirectory)
-        .filter(([number, train]) => {
-          const name =
-            typeof train === "string"
-              ? train
-              : train?.name || "";
-
+      const prsMatches = trainsFromDirectory(prsDirectoryBody?.data)
+        .filter((train) => {
+          const name = train.name.toLowerCase();
+          const number = String(train.number || "");
           return (
             number &&
-            name &&
             (
-  name.toLowerCase().includes(searchText) ||
-  String(number).includes(searchText)
-)
+              name.includes(searchText) ||
+              number.includes(searchText)
+            )
           );
         })
         .slice(0, 10)
-        .map(([number, train]) => {
-          const name =
-            typeof train === "string"
-              ? train
-              : train?.name || "";
-
-          return {
-            number,
-            name,
-            sourceCode: "",
-            destinationCode: ""
-          };
-        });
+        .map((train) => ({
+          number: train.number,
+          name: train.name,
+          sourceCode: train.source || "",
+          destinationCode: train.destination || ""
+        }));
 
       if (prsMatches.length > 0) {
   const combinedMatches = [
@@ -361,24 +452,18 @@ try {
         "https://api.railradar.in/v1/lookup/trains/ntes"
       );
 
-      const ntesDirectory =
-        ntesBody?.data &&
-        typeof ntesBody.data === "object" &&
-        !Array.isArray(ntesBody.data)
-          ? ntesBody.data
-          : {};
-
-      const ntesMatches = Object.entries(ntesDirectory)
-        .filter(([number, name]) =>
-          String(number).toLowerCase().includes(searchText) ||
-          String(name).toLowerCase().includes(searchText)
+      const ntesMatches = trainsFromDirectory(ntesBody?.data)
+        .filter((train) =>
+          String(train.number).toLowerCase().includes(searchText) ||
+          train.name.toLowerCase().includes(searchText)
         )
+        .filter((train) => train.number)
         .slice(0, 10)
-        .map(([number, name]) => ({
-          number,
-          name: String(name),
-          source: "",
-          destination: ""
+        .map((train) => ({
+          number: train.number,
+          name: train.name,
+          source: train.source || "",
+          destination: train.destination || ""
         }));
 
       if (ntesMatches.length > 0) {
@@ -573,17 +658,22 @@ try {
           continue;
         }
 
-        let routeResults = trains.map((item) => ({
-          number: item?.train?.number,
-          name: item?.train?.name || "Train",
-          source: fromStation.name,
-          destination: toStation.name,
-          from: item?.from,
-          to: item?.to,
-          live: item?.live,
-          type: item?.train?.type,
-          runDays: item?.train?.runDays
-        }));
+        let routeResults = trains
+          .map((item) => {
+            const identity = readTrainIdentity(item);
+            return {
+              number: identity.number,
+              name: identity.name,
+              source: fromStation.name,
+              destination: toStation.name,
+              from: item?.from,
+              to: item?.to,
+              live: item?.live,
+              type: item?.train?.type,
+              runDays: item?.train?.runDays
+            };
+          })
+          .filter((train) => train.number);
 
         /*
          * If a train name was included in the search,
