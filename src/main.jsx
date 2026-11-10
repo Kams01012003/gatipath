@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { localApi } from "./localApi.js";
 import "./styles.css";
 
 function formatTime(iso) {
@@ -62,7 +63,54 @@ function isAbortError(error) {
   return error?.name === "AbortError";
 }
 
-function mapLiveTrain(payload) {
+function identityText(...values) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function readTrainIdentity(source, fallbackNumber = "") {
+  if (typeof source === "string" || typeof source === "number") {
+    const text = identityText(source);
+    if (/^\d{5}$/.test(text)) {
+      return { number: text, name: "" };
+    }
+    return { number: identityText(fallbackNumber), name: text };
+  }
+
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return { number: identityText(fallbackNumber), name: "" };
+  }
+
+  const nested =
+    source.train && typeof source.train === "object" && !Array.isArray(source.train)
+      ? source.train
+      : null;
+
+  return {
+    number: identityText(
+      source.number,
+      source.trainNumber,
+      nested?.number,
+      nested?.trainNumber,
+      fallbackNumber
+    ),
+    name: identityText(
+      source.name,
+      source.trainName,
+      nested?.name,
+      nested?.trainName
+    ),
+  };
+}
+
+function mapLiveTrain(payload, fallback = {}) {
   const data = payload?.data;
   if (!data) return null;
 
@@ -124,9 +172,11 @@ const dayNumber = scheduled && firstScheduled
     data.previousHalt?.stationName ||
     null;
 
+  const identity = readTrainIdentity(data);
+
   return {
-    number: data.trainNumber || data.train?.number,
-    name: data.trainName || data.train?.name || "Train",
+    number: identity.number || fallback.number || "",
+    name: identity.name || fallback.name || "Train",
     totalStations,
     stationsRemaining,
     type: data.train?.type || data.train?.category || "Train",
@@ -141,6 +191,13 @@ const dayNumber = scheduled && firstScheduled
     updatedAt: data.lastUpdatedAt || payload?.meta?.timestamp,
     stations,
   };
+}
+
+function trainHeading(train) {
+  const name = typeof train?.name === "string" ? train.name.trim() : "";
+  if (name && name !== "Train") return name;
+  const number = typeof train?.number === "string" ? train.number.trim() : "";
+  return number || name || "Train";
 }
 
 function App() {
@@ -288,7 +345,7 @@ function App() {
       setSearchError("");
 
       try {
-        const response = await fetch(
+        const response = await localApi(
           `/api/search?q=${encodeURIComponent(q)}`,
           { signal: controller.signal }
         );
@@ -335,7 +392,7 @@ function App() {
     };
   }, [query, active]);
 
-  async function loadTrain(number) {
+  async function loadTrain(number, fallbackName = "") {
     cancelTrainLoad();
 
     const requestId = loadRequestRef.current;
@@ -352,13 +409,16 @@ function App() {
     setLiveError("");
 
     try {
-      const response = await fetch(`/api/train/${trainNumber}`, {
+      const response = await localApi(`/api/train/${trainNumber}`, {
         signal: controller.signal,
       });
       const body = await response.json();
       if (requestId !== loadRequestRef.current) return;
       if (!response.ok || !body.success) throw new Error(body.error || "Live status unavailable");
-      const train = mapLiveTrain(body);
+      const train = mapLiveTrain(body, {
+        number: trainNumber,
+        name: fallbackName,
+      });
       if (!train) throw new Error("Live status unavailable");
       if (requestId !== loadRequestRef.current) return;
 
@@ -441,7 +501,7 @@ function App() {
     const url = new URL(window.location.href);
     url.searchParams.set("train", t.number);
     window.history.pushState(null, "", url.pathname + url.search);
-    loadTrain(t.number);
+    loadTrain(t.number, t.name);
   }
 
   function reset() {
@@ -519,7 +579,7 @@ function App() {
         <div className="train-heading">
           <div>
             <div className="eyebrow">{active.number} · {active.type}</div>
-            <h2>{active.name}</h2>
+            <h2>{trainHeading(active)}</h2>
             <p>{active.from} <span>→</span> {active.to}</p>
           </div>
           <button className="share" onClick={() => navigator.clipboard?.writeText(location.href)}>↗ Share</button>
