@@ -1,18 +1,72 @@
-export default async function handler(req, res) {
-  const apiKey = process.env.RAILRADAR_API_KEY;
-  const number = String(req.query?.number || "").replace(/\D/g, "");
+import { isLocalMockEnabled, mockTrainResponse } from "../mockTrains.js";
 
-  if (!apiKey) {
-    return res.status(500).json({
-      success: false,
-      error: "RailRadar API key is not configured."
-    });
+function identityText(...values) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
   }
+  return "";
+}
+
+function readTrainIdentity(source, fallbackNumber = "") {
+  if (typeof source === "string" || typeof source === "number") {
+    const text = identityText(source);
+    if (/^\d{5}$/.test(text)) {
+      return { number: text, name: "" };
+    }
+    return { number: identityText(fallbackNumber), name: text };
+  }
+
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    return { number: identityText(fallbackNumber), name: "" };
+  }
+
+  const nested =
+    source.train && typeof source.train === "object" && !Array.isArray(source.train)
+      ? source.train
+      : null;
+
+  return {
+    number: identityText(
+      source.number,
+      source.trainNumber,
+      nested?.number,
+      nested?.trainNumber,
+      fallbackNumber
+    ),
+    name: identityText(
+      source.name,
+      source.trainName,
+      nested?.name,
+      nested?.trainName
+    ),
+  };
+}
+
+export default async function handler(req, res) {
+  const number = String(req.query?.number || "").replace(/\D/g, "");
 
   if (!/^\d{5}$/.test(number)) {
     return res.status(400).json({
       success: false,
       error: "Train number must be 5 digits."
+    });
+  }
+
+  if (isLocalMockEnabled()) {
+    return res.status(200).json(mockTrainResponse(number));
+  }
+
+  const apiKey = process.env.RAILRADAR_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({
+      success: false,
+      error: "RailRadar API key is not configured."
     });
   }
 
@@ -76,10 +130,20 @@ export default async function handler(req, res) {
 
         if (staticResponse.ok) {
           const staticBody = await staticResponse.json();
-          const staticRoute = staticBody?.data?.route;
+          const staticData = staticBody?.data;
+          const staticRoute = staticData?.route;
 
           if (Array.isArray(staticRoute) && staticRoute.length > 0) {
             body.data.route = staticRoute;
+          }
+
+          const liveIdentity = readTrainIdentity(body.data);
+          const staticIdentity = readTrainIdentity(staticData);
+          if (!liveIdentity.number && staticIdentity.number) {
+            body.data.trainNumber = staticIdentity.number;
+          }
+          if (!liveIdentity.name && staticIdentity.name) {
+            body.data.trainName = staticIdentity.name;
           }
         }
       } catch (fallbackError) {
