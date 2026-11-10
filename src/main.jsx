@@ -1,210 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { localApi } from "./localApi.js";
+import {
+  formatDelay,
+  formatRouteEndpoints,
+  formatTime,
+  mapLiveTrain,
+  trainHeading,
+} from "./trainUtils.js";
 import "./styles.css";
-
-function formatTime(iso) {
-  if (!iso) return "—";
-  return new Intl.DateTimeFormat("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: "Asia/Kolkata",
-  }).format(new Date(iso));
-}
-
-function parseDelay(value) {
-  if (typeof value === "number") {
-    if (!Number.isFinite(value) || value < 0) return null;
-    return value;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
-    const number = Number(trimmed);
-    if (!Number.isFinite(number)) return null;
-    return number;
-  }
-
-  return null;
-}
-
-function formatDelay(minutes) {
-  const value = parseDelay(minutes);
-  if (value == null) return "Delay unavailable";
-  if (value === 0) return "On time";
-
-  const hours = Math.floor(value / 60);
-  const mins = value % 60;
-
-  if (hours > 0 && mins > 0) {
-    return `${hours} hr ${mins} min late`;
-  }
-
-  if (hours > 0) {
-    return `${hours} hr late`;
-  }
-
-  return `${mins} min late`;
-}
-
-function formatUpdated(iso) {
-  if (!iso) return "Live status";
-  return `Updated ${new Intl.DateTimeFormat("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: "Asia/Kolkata",
-  }).format(new Date(iso))}`;
-}
 
 function isAbortError(error) {
   return error?.name === "AbortError";
 }
 
-function identityText(...values) {
-  for (const value of values) {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return String(value);
-    }
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-  return "";
-}
-
-function readTrainIdentity(source, fallbackNumber = "") {
-  if (typeof source === "string" || typeof source === "number") {
-    const text = identityText(source);
-    if (/^\d{5}$/.test(text)) {
-      return { number: text, name: "" };
-    }
-    return { number: identityText(fallbackNumber), name: text };
-  }
-
-  if (!source || typeof source !== "object" || Array.isArray(source)) {
-    return { number: identityText(fallbackNumber), name: "" };
-  }
-
-  const nested =
-    source.train && typeof source.train === "object" && !Array.isArray(source.train)
-      ? source.train
-      : null;
-
-  return {
-    number: identityText(
-      source.number,
-      source.trainNumber,
-      nested?.number,
-      nested?.trainNumber,
-      fallbackNumber
-    ),
-    name: identityText(
-      source.name,
-      source.trainName,
-      nested?.name,
-      nested?.trainName
-    ),
-  };
-}
-
-function mapLiveTrain(payload, fallback = {}) {
-  const data = payload?.data;
-  if (!data) return null;
-
-  const route = Array.isArray(data.route)
-  ? data.route.filter((stop) => stop.isHalt !== false)
-  : [];
-  const currentCode = data.currentLocation?.stationCode;
-  const currentSequence = data.currentLocation?.sequence;
-  
-  const totalStations = route.length;
-  const stationsRemaining = currentSequence
-    ? route.filter((stop) => stop.sequence > currentSequence).length
-    : null;
-
-  const stations = route.map((stop) => {
-    let state = "Upcoming";
-    if (stop.sequence === 1) state = "Origin";
-    else if (stop.sequence === route.length) state = "Destination";
-
-    if (stop.status === "departed" || stop.status === "arrived") state = "Completed";
-    if (stop.sequence === currentSequence || stop.stationCode === currentCode) state = "Current";
-
-    const scheduled = stop.scheduledArrival || stop.scheduledDeparture;
-    const firstScheduled = route[0]?.scheduledDeparture || route[0]?.scheduledArrival;
-const dayNumber = scheduled && firstScheduled
-  ? Math.max(
-      Math.floor(
-        (new Date(scheduled) - new Date(firstScheduled)) / 86400000
-      ) + 1,
-      1
-    )
-  : 1;
-    return {
-      name: stop.stationName,
-      time: formatTime(scheduled),
-      dayNumber,
-      arrival: formatTime(stop.scheduledArrival),
-      departure: formatTime(stop.scheduledDeparture),
-      actualArrival: formatTime(stop.actualArrival),
-      actualDeparture: formatTime(stop.actualDeparture),
-      platform: stop.platform || null,
-      state,
-      code: stop.stationCode,
-      sequence: stop.sequence,
-      delay: parseDelay(stop.delayArrival ?? stop.delayDeparture),
-    };
-  });
-
-  const status = String(data.status || "").toLowerCase();
-  let state = "scheduled";
-  if (status.includes("cancel")) state = "cancelled";
-  else if (status.includes("complete") || status.includes("arrived") || status === "terminated") state = "completed";
-  else if (status === "delayed") state = "delayed";
-  else if (status === "scheduled") state = "scheduled";
-  else if (status === "running") state = "running";
-
-  const currentStation =
-    data.currentLocation?.stationName ||
-    data.previousHalt?.stationName ||
-    null;
-
-  const identity = readTrainIdentity(data);
-
-  return {
-    number: identity.number || fallback.number || "",
-    name: identity.name || fallback.name || "Train",
-    totalStations,
-    stationsRemaining,
-    type: data.train?.type || data.train?.category || "Train",
-    from: data.train?.source?.name || "Origin",
-    to: data.train?.destination?.name || "Destination",
-    fromCode: data.train?.source?.code,
-    toCode: data.train?.destination?.code,
-    state,
-    delay: parseDelay(data.delayMinutes),
-    current: currentStation,
-    next: data.nextHalt?.stationName || null,
-    updatedAt: data.lastUpdatedAt || payload?.meta?.timestamp,
-    stations,
-  };
-}
-
-function trainHeading(train) {
-  const name = typeof train?.name === "string" ? train.name.trim() : "";
-  if (name && name !== "Train") return name;
-  const number = typeof train?.number === "string" ? train.number.trim() : "";
-  return number || name || "Train";
-}
-
-function App() {
+export function App() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [completedSearchQuery, setCompletedSearchQuery] = useState(null);
   const [selected, setSelected] = useState(null);
   const [direction, setDirection] = useState(null);
   const [active, setActive] = useState(null);
@@ -299,6 +114,7 @@ function App() {
     setBoarding("");
     setResults([]);
     setSearchError("");
+    setCompletedSearchQuery(null);
     setLiveError("");
     setLoading(false);
     setSearching(false);
@@ -319,6 +135,7 @@ function App() {
       setResults([]);
       setSearchError("");
       setSearching(false);
+      setCompletedSearchQuery(null);
       return;
     }
 
@@ -329,6 +146,7 @@ function App() {
       setResults(cached);
       setSearchError("");
       setSearching(false);
+      setCompletedSearchQuery(q);
       return;
     }
 
@@ -337,6 +155,7 @@ function App() {
     searchAbortRef.current = controller;
     setSearching(false);
     setSearchError("");
+    setCompletedSearchQuery(null);
 
     const timer = setTimeout(async () => {
       if (requestId !== searchRequestRef.current) return;
@@ -363,11 +182,13 @@ function App() {
         searchCacheRef.current.set(cacheKey, data);
         if (requestId !== searchRequestRef.current) return;
         setResults(data);
+        setCompletedSearchQuery(q);
       } catch (error) {
         if (requestId !== searchRequestRef.current) return;
         if (isAbortError(error)) return;
         setResults([]);
         setSearchError(error.message || "Search unavailable");
+        setCompletedSearchQuery(q);
       } finally {
         if (requestId === searchRequestRef.current) {
           setSearching(false);
@@ -475,6 +296,7 @@ function App() {
       setResults([]);
       setSearchError("");
       setSearching(false);
+      setCompletedSearchQuery(null);
       skipSearchRef.current = trainParam;
       setQuery(trainParam);
       loadTrain(trainParam);
@@ -497,6 +319,7 @@ function App() {
     setResults([]);
     setSearchError("");
     setSearching(false);
+    setCompletedSearchQuery(null);
     setLiveError("");
     const url = new URL(window.location.href);
     url.searchParams.set("train", t.number);
@@ -522,6 +345,16 @@ function App() {
   }, [active]);
 
   const scheduledDeparture = active?.stations?.[0]?.time;
+  const trimmedQuery = query.trim();
+  const showEmptyResults =
+    !searching &&
+    !selected &&
+    !loading &&
+    !active &&
+    !searchError &&
+    results.length === 0 &&
+    trimmedQuery.length >= 3 &&
+    completedSearchQuery === trimmedQuery;
 
   return <div className="app">
     <header className="nav">
@@ -534,9 +367,16 @@ function App() {
       <h1>Know where<br/><em>your train is.</em></h1>
       <p className="sub">Search by train name or number. Choose the journey. Follow every station.</p>
       <div className="search-wrap">
-        <div className="search-icon">⌕</div>
-        <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
-          placeholder="Train number or name" />
+        <div className="search-icon" aria-hidden="true">⌕</div>
+        <label htmlFor="train-search" className="sr-only">Search trains by number or name</label>
+        <input
+          id="train-search"
+          autoFocus
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Train number or name"
+          aria-label="Search trains by number or name"
+        />
         <button
   type="button"
   className={`voice-button ${listening ? "listening" : ""}`}
@@ -560,29 +400,37 @@ function App() {
   <line x1="8" y1="22" x2="16" y2="22" />
 </svg>
 </button>
-        {query && <button className="clear" onClick={() => setQuery("")}>×</button>}
+        {query && <button className="clear" onClick={() => setQuery("")} aria-label="Clear search">×</button>}
       </div>
       {searching && <div className="search-status">Searching live train directory…</div>}
       {searchError && <div className="search-status">{searchError}</div>}
       {results.length > 0 && <div className="results">
-        {results.map(t => <button className="result" key={t.number} onClick={() => choose(t)}>
-          <span className="train-mark">↗</span>
-          <span><b>{t.name}</b><small>{t.number} · {t.source} → {t.destination}</small></span>
-          <span className="arrow">→</span>
-        </button>)}
+        {results.map(t => {
+          const route = formatRouteEndpoints(t.source, t.destination);
+          return (
+            <button className="result" key={t.number} onClick={() => choose(t)}>
+              <span className="train-mark">↗</span>
+              <span>
+                <b>{t.name}</b>
+                <small>{route ? `${t.number} · ${route}` : t.number}</small>
+              </span>
+              <span className="arrow">→</span>
+            </button>
+          );
+        })}
       </div>}
-      {!searching && query.length >= 2 && !results.length && !searchError && <div className="search-status">No matching trains found.</div>}
+      {showEmptyResults && <div className="search-status">No matching trains found.</div>}
     </main> :
     <main id="journey" className="journey-page">
       <section className="status-page">
-        <div className="back" onClick={reset}>← Search again</div>
+        <button type="button" className="back" onClick={reset}>← Search again</button>
         <div className="train-heading">
           <div>
             <div className="eyebrow">{active.number} · {active.type}</div>
             <h2>{trainHeading(active)}</h2>
             <p>{active.from} <span>→</span> {active.to}</p>
           </div>
-          <button className="share" onClick={() => navigator.clipboard?.writeText(location.href)}>↗ Share</button>
+          <button type="button" className="share" onClick={() => window.navigator.clipboard?.writeText(window.location.href)}>↗ Share</button>
         </div>
 
         <div className={`status-card ${active.state}`}>
@@ -591,7 +439,7 @@ function App() {
             <div><small>TRAIN STATUS</small><h3>{statusText}</h3></div>
           </div>
           {active.state === "running" && <div className="status-detail"><b>{active.current || "On route"}</b><span>{formatDelay(active.delay)}{active.next ? ` · Next: ${active.next}` : ""}</span></div>}
-          {active.state === "scheduled" && <div className="status-detail"><b>{scheduledDeparture}</b><span>Scheduled departure from {active.from}</span></div>}
+          {active.state === "scheduled" && scheduledDeparture && scheduledDeparture !== "—" && <div className="status-detail"><b>{scheduledDeparture}</b><span>Scheduled departure from {active.from}</span></div>}
           {active.state === "delayed" && <div className="status-detail"><b>{formatDelay(active.delay)}</b><span>{active.current || "Live status available"}</span></div>}
           {active.state === "completed" && <div className="status-detail"><b>{active.to}</b><span>Journey completed</span></div>}
           {active.state === "cancelled" && <div className="status-detail"><b>Cancelled</b><span>Check railway advisories before travelling</span></div>}
@@ -599,7 +447,7 @@ function App() {
 
         <div className="boarding">
           <div><b>Where are you boarding?</b><small>Highlight your station on the journey</small></div>
-          <select value={boarding} onChange={e => setBoarding(e.target.value)}>
+          <select value={boarding} onChange={e => setBoarding(e.target.value)} aria-label="Boarding station">
             <option value="">Select a station</option>
             {active.stations.map(s => <option key={`${s.sequence}-${s.code}`} value={s.name}>{s.name}</option>)}
           </select>
@@ -608,14 +456,19 @@ function App() {
         <div className="timeline-head">
           <div>
             <span className="eyebrow">THE JOURNEY</span>
-            <h3>
-              {active.totalStations} stations
-              {active.stationsRemaining !== null && (
-                <span> · {active.stationsRemaining} remaining</span>
-              )}
-            </h3>
+            {active.hasSchedule ? (
+              <h3>
+                {active.totalStations} stations
+                {active.stationsRemaining !== null && (
+                  <span> · {active.stationsRemaining} remaining</span>
+                )}
+              </h3>
+            ) : (
+              <h3>Schedule unavailable</h3>
+            )}
           </div>
         </div>
+        {active.hasSchedule ? (
         <div className="timeline">
   {active.stations.map((s, i) => {
     const state = s.state.toLowerCase();
@@ -668,7 +521,7 @@ function App() {
               <div className="time-column">
                 <small>ARRIVAL</small>
                 <strong>{s.arrival || "—"}</strong>
-                {s.actualArrival && (
+                {s.actualArrival && s.actualArrival !== "—" && (
                   <span>Actual {s.actualArrival}</span>
                 )}
               </div>
@@ -676,7 +529,7 @@ function App() {
               <div className="time-column">
                 <small>DEPARTURE</small>
                 <strong>{s.departure || "—"}</strong>
-                {s.actualDeparture && (
+                {s.actualDeparture && s.actualDeparture !== "—" && (
                   <span>Actual {s.actualDeparture}</span>
                 )}
               </div>
@@ -694,6 +547,11 @@ function App() {
     );
   })}
 </div>
+        ) : (
+          <div className="schedule-unavailable" role="status">
+            Route schedule is unavailable for this train. Live status above is preserved when the provider reports it, but station times cannot be shown.
+          </div>
+        )}
         
         <div className="rating-section">
   <div className="rating-title">How was your experience?</div>
@@ -724,4 +582,7 @@ function App() {
   </div>;
 }
 
-createRoot(document.getElementById("root")).render(<App/>);
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  createRoot(rootElement).render(<App/>);
+}

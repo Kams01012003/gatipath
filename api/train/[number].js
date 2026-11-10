@@ -1,61 +1,17 @@
 import { isLocalMockEnabled, mockTrainResponse } from "../mockTrains.js";
-
-function identityText(...values) {
-  for (const value of values) {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return String(value);
-    }
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-  return "";
-}
-
-function readTrainIdentity(source, fallbackNumber = "") {
-  if (typeof source === "string" || typeof source === "number") {
-    const text = identityText(source);
-    if (/^\d{5}$/.test(text)) {
-      return { number: text, name: "" };
-    }
-    return { number: identityText(fallbackNumber), name: text };
-  }
-
-  if (!source || typeof source !== "object" || Array.isArray(source)) {
-    return { number: identityText(fallbackNumber), name: "" };
-  }
-
-  const nested =
-    source.train && typeof source.train === "object" && !Array.isArray(source.train)
-      ? source.train
-      : null;
-
-  return {
-    number: identityText(
-      source.number,
-      source.trainNumber,
-      nested?.number,
-      nested?.trainNumber,
-      fallbackNumber
-    ),
-    name: identityText(
-      source.name,
-      source.trainName,
-      nested?.name,
-      nested?.trainName
-    ),
-  };
-}
+import { isExactFiveDigitTrainNumber, readTrainIdentity } from "../../src/trainUtils.js";
 
 export default async function handler(req, res) {
-  const number = String(req.query?.number || "").replace(/\D/g, "");
+  const rawNumber = String(req.query?.number || "").trim();
 
-  if (!/^\d{5}$/.test(number)) {
+  if (!isExactFiveDigitTrainNumber(rawNumber)) {
     return res.status(400).json({
       success: false,
       error: "Train number must be 5 digits."
     });
   }
+
+  const number = rawNumber;
 
   if (isLocalMockEnabled()) {
     return res.status(200).json(mockTrainResponse(number));
