@@ -215,6 +215,48 @@ describe("route endpoint helpers and delays", () => {
     });
   });
 
+  it("does not let empty nested station objects suppress root labels", () => {
+    expect(
+      directLookupStations({
+        train: { source: {} },
+        source: { name: "Mumbai Central" },
+        destination: { name: "New Delhi" },
+      })
+    ).toEqual({
+      source: "Mumbai Central",
+      destination: "New Delhi",
+    });
+
+    expect(
+      directLookupStations({
+        train: {
+          source: { name: "" },
+          destination: {},
+          sourceCode: "   ",
+        },
+        source: { name: "Kalka" },
+        destination: { name: "Shimla" },
+      })
+    ).toEqual({
+      source: "Kalka",
+      destination: "Shimla",
+    });
+
+    expect(
+      directLookupStations({
+        train: {
+          source: { name: "Nested Source" },
+          destination: {},
+        },
+        source: { name: "Root Source" },
+        destination: { name: "Root Destination" },
+      })
+    ).toEqual({
+      source: "Nested Source",
+      destination: "Root Destination",
+    });
+  });
+
   it("distinguishes zero delay from unknown delay", () => {
     expect(parseDelay(0)).toBe(0);
     expect(formatDelay(0)).toBe("On time");

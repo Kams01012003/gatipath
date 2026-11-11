@@ -184,6 +184,10 @@ export function stationFields(record) {
   };
 }
 
+function preferUsableStationLabel(primary, fallback) {
+  return primary || fallback || "";
+}
+
 export function directLookupStations(payload) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return { source: "", destination: "" };
@@ -194,17 +198,32 @@ export function directLookupStations(payload) {
       ? payload.train
       : {};
 
+  const nestedSource = stationLabel({
+    name: nested.sourceName,
+    station: nested.source,
+    code: nested.sourceCode,
+  });
+  const rootSource = stationLabel({
+    name: payload.sourceName,
+    station: payload.source,
+    code: payload.sourceCode,
+  });
+  const nestedDestination = stationLabel({
+    name: nested.destinationName,
+    station: nested.destination,
+    code: nested.destinationCode,
+  });
+  const rootDestination = stationLabel({
+    name: payload.destinationName,
+    station: payload.destination,
+    code: payload.destinationCode,
+  });
+
   return {
-    source: stationLabel({
-      name: nested.sourceName || payload.sourceName,
-      station: nested.source || payload.source,
-      code: nested.sourceCode || payload.sourceCode,
-    }),
-    destination: stationLabel({
-      name: nested.destinationName || payload.destinationName,
-      station: nested.destination || payload.destination,
-      code: nested.destinationCode || payload.destinationCode,
-    }),
+    // Resolve nested and root labels independently so a truthy empty nested
+    // object (e.g. source: {}) cannot suppress a usable root name.
+    source: preferUsableStationLabel(nestedSource, rootSource),
+    destination: preferUsableStationLabel(nestedDestination, rootDestination),
   };
 }
 

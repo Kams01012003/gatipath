@@ -505,6 +505,72 @@ describe("journey UI fixes", () => {
     expect(await screen.findByRole("heading", { name: /mumbai rajdhani/i })).toBeInTheDocument();
   });
 
+  it("shows empty results after failed load once the query is edited", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    setApiHandlers({
+      search: async (query) => {
+        if (query.toLowerCase() === "zzzz") {
+          return jsonResponse({ success: true, data: [] });
+        }
+        return jsonResponse({
+          success: true,
+          data: [
+            {
+              number: "12951",
+              name: "Mumbai Rajdhani",
+              source: "Mumbai Central",
+              destination: "New Delhi",
+            },
+          ],
+        });
+      },
+      train: async () =>
+        jsonResponse(
+          { success: false, error: "Upstream unavailable" },
+          502
+        ),
+    });
+
+    render(<App />);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const input = screen.getByRole("textbox", {
+      name: /search trains by number or name/i,
+    });
+
+    await user.type(input, "12951");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(950);
+    });
+    await user.click(await screen.findByRole("button", { name: /mumbai rajdhani/i }));
+    expect(await screen.findByText(/upstream unavailable/i)).toBeInTheDocument();
+
+    await user.clear(input);
+    await user.type(input, "zzzz");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(950);
+    });
+
+    expect(await screen.findByText(/no matching trains found/i)).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
+  it("keeps journey scroll-margin clear of the sticky header", async () => {
+    window.history.pushState(null, "", "/?train=12951");
+    render(<App />);
+    expect(await screen.findByRole("button", { name: /search again/i })).toBeInTheDocument();
+
+    const journey = document.getElementById("journey");
+    expect(journey).toBeTruthy();
+    const scrollMargin = Number.parseFloat(
+      getComputedStyle(journey).scrollMarginTop || "0"
+    );
+    expect(scrollMargin).toBeGreaterThanOrEqual(64);
+
+    const again = screen.getByRole("button", { name: /search again/i });
+    again.focus();
+    expect(again).toHaveFocus();
+  });
+
   it("hides dangling blank route arrows when endpoints are missing", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     setApiHandlers({

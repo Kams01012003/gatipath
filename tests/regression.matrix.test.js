@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  directLookupStations,
   formatDelay,
   formatRouteEndpoints,
   formatTime,
@@ -166,6 +167,40 @@ describe("regression matrix: mapLiveTrain states", () => {
     });
     expect(train.stations[1].state).toBe("Current");
     expect(train.stationsRemaining).toBeNull();
+  });
+});
+
+describe("regression matrix: directLookupStations empty nested fallback", () => {
+  it.each([
+    [
+      {
+        train: { source: {}, destination: {} },
+        source: { name: "Mumbai Central" },
+        destination: { name: "New Delhi" },
+      },
+      { source: "Mumbai Central", destination: "New Delhi" },
+    ],
+    [
+      {
+        train: { source: { name: "Nested" }, destination: { code: "" } },
+        source: { name: "Root Source" },
+        destination: { name: "Root Destination" },
+      },
+      { source: "Nested", destination: "Root Destination" },
+    ],
+    [
+      {
+        train: {
+          sourceName: "Nested Source Name",
+          destinationCode: "NDLS",
+        },
+        source: { name: "Root Source" },
+        destination: { name: "Root Destination" },
+      },
+      { source: "Nested Source Name", destination: "NDLS" },
+    ],
+  ])("normalizes %#", (payload, expected) => {
+    expect(directLookupStations(payload)).toEqual(expected);
   });
 });
 

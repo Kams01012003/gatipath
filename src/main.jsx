@@ -311,6 +311,27 @@ export function App() {
     };
   }, []);
 
+  function clearObsoleteSelectionState() {
+    cancelTrainLoad();
+    setSelected(null);
+    setDirection(null);
+    setLiveError("");
+    setLoading(false);
+    loadedTrainRef.current = null;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("train")) {
+      url.searchParams.delete("train");
+      window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+    }
+  }
+
+  function onQueryChange(value) {
+    if (selected || liveError || loading || inFlightTrainRef.current) {
+      clearObsoleteSelectionState();
+    }
+    setQuery(value);
+  }
+
   function choose(t) {
     cancelTrainSearch();
     skipSearchRef.current = query.trim();
@@ -373,7 +394,7 @@ export function App() {
           id="train-search"
           autoFocus
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={e => onQueryChange(e.target.value)}
           placeholder="Train number or name"
           aria-label="Search trains by number or name"
         />
@@ -400,7 +421,7 @@ export function App() {
   <line x1="8" y1="22" x2="16" y2="22" />
 </svg>
 </button>
-        {query && <button className="clear" onClick={() => setQuery("")} aria-label="Clear search">×</button>}
+        {query && <button className="clear" onClick={() => onQueryChange("")} aria-label="Clear search">×</button>}
       </div>
       {searching && <div className="search-status">Searching live train directory…</div>}
       {searchError && <div className="search-status">{searchError}</div>}
