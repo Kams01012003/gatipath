@@ -1,85 +1,9 @@
 import { isLocalMockEnabled, mockSearchResponse } from "./mockTrains.js";
-
-function identityText(...values) {
-  for (const value of values) {
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return String(value);
-    }
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-  return "";
-}
-
-function readTrainIdentity(source, fallbackNumber = "") {
-  if (typeof source === "string" || typeof source === "number") {
-    const text = identityText(source);
-    if (/^\d{5}$/.test(text)) {
-      return { number: text, name: "" };
-    }
-    return { number: identityText(fallbackNumber), name: text };
-  }
-
-  if (!source || typeof source !== "object" || Array.isArray(source)) {
-    return { number: identityText(fallbackNumber), name: "" };
-  }
-
-  const nested =
-    source.train && typeof source.train === "object" && !Array.isArray(source.train)
-      ? source.train
-      : null;
-
-  return {
-    number: identityText(
-      source.number,
-      source.trainNumber,
-      nested?.number,
-      nested?.trainNumber,
-      fallbackNumber
-    ),
-    name: identityText(
-      source.name,
-      source.trainName,
-      nested?.name,
-      nested?.trainName
-    ),
-  };
-}
-
-function stationLabel({ name, station, code } = {}) {
-  const objectName =
-    station && typeof station === "object"
-      ? identityText(station.name, station.stationName)
-      : "";
-  const explicitName = identityText(name, objectName);
-  if (explicitName) return explicitName;
-  if (typeof station === "string" && station.trim()) return station.trim();
-  const objectCode =
-    station && typeof station === "object"
-      ? identityText(station.code, station.stationCode)
-      : "";
-  return identityText(code, objectCode);
-}
-
-function stationFields(record) {
-  if (!record || typeof record !== "object" || Array.isArray(record)) {
-    return { source: "", destination: "" };
-  }
-
-  return {
-    source: stationLabel({
-      name: record.sourceName,
-      station: record.source,
-      code: record.sourceCode,
-    }),
-    destination: stationLabel({
-      name: record.destinationName,
-      station: record.destination,
-      code: record.destinationCode,
-    }),
-  };
-}
+import {
+  directLookupStations,
+  readTrainIdentity,
+  stationFields,
+} from "../src/trainUtils.js";
 
 function trainsFromDirectory(data) {
   if (Array.isArray(data)) {
@@ -211,27 +135,18 @@ if (numberMatch) {
     );
 
     const payload = response?.data;
-    const train = payload?.train;
     const identity = readTrainIdentity(payload, trainNumber);
 
     if (identity.name) {
-      const named = train && typeof train === "object" ? train : {};
+      const stations = directLookupStations(payload);
       return res.status(200).json({
         success: true,
         data: [
           {
             number: identity.number || trainNumber,
             name: identity.name,
-            source: stationLabel({
-              name: named.sourceName,
-              station: named.source,
-              code: named.sourceCode,
-            }),
-            destination: stationLabel({
-              name: named.destinationName,
-              station: named.destination,
-              code: named.destinationCode,
-            })
+            source: stations.source,
+            destination: stations.destination
           }
         ]
       });
