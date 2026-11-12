@@ -22,6 +22,22 @@ describe("mock fail-closed behavior", () => {
     expect(trainBody.data.route.length).toBeGreaterThan(0);
   });
 
+  it("keeps review submissions disabled in local mock mode", async () => {
+    const listed = await mockLocalRequest("/api/reviews");
+    expect(listed.ok).toBe(true);
+    const listBody = await listed.json();
+    expect(listBody.storageConfigured).toBe(false);
+    expect(listBody.submissionEnabled).toBe(false);
+
+    const posted = await mockLocalRequest("/api/reviews", {
+      method: "POST",
+      body: JSON.stringify({ rating: 5, name: "Jay", comment: "Test" }),
+    });
+    expect(posted.status).toBe(503);
+    const postBody = await posted.json();
+    expect(postBody.code).toBe("storage_unconfigured");
+  });
+
   it("rejects malformed train mock paths without contacting providers", async () => {
     const response = await mockLocalRequest("/api/train/abc12951");
     // Path regex only matches digits; malformed falls through to 404 mock miss.

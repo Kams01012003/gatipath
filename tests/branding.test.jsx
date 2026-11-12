@@ -6,11 +6,28 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 vi.mock("../src/localApi.js", () => ({
-  localApi: vi.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({ success: true, data: [] }),
-  })),
+  localApi: vi.fn(async (url) => {
+    if (String(url).startsWith("/api/reviews")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          success: true,
+          storageConfigured: false,
+          submissionEnabled: false,
+          message: "Reviews are temporarily unavailable. Please try again later.",
+          average: null,
+          count: 0,
+          reviews: [],
+        }),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: [] }),
+    };
+  }),
 }));
 
 beforeEach(() => {

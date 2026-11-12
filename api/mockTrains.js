@@ -155,7 +155,57 @@ export function mockTrainResponse(number) {
   };
 }
 
-export function mockLocalRequest(url) {
+function mockReviewsResponse(url, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const href = String(url || "");
+
+  if (href.includes("/api/reviews/moderate")) {
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({
+        success: false,
+        error: "Reviews are temporarily unavailable. Please try again later.",
+      }),
+    };
+  }
+
+  if (method === "GET") {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        storageConfigured: false,
+        submissionEnabled: false,
+        message: "Reviews are temporarily unavailable. Please try again later.",
+        average: null,
+        count: 0,
+        reviews: [],
+      }),
+    };
+  }
+
+  if (method === "POST") {
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({
+        success: false,
+        code: "storage_unconfigured",
+        error: "Reviews are temporarily unavailable. Please try again later.",
+      }),
+    };
+  }
+
+  return {
+    ok: false,
+    status: 405,
+    json: async () => ({ success: false, error: "Method not allowed." }),
+  };
+}
+
+export function mockLocalRequest(url, options = {}) {
   const href = String(url || "");
   if (/^https?:\/\//i.test(href) && !href.includes("/api/")) {
     return {
@@ -166,6 +216,10 @@ export function mockLocalRequest(url) {
         error: "External train requests are blocked in local mock mode.",
       }),
     };
+  }
+
+  if (href.includes("/api/reviews")) {
+    return mockReviewsResponse(href, options);
   }
 
   const search = href.match(/\/api\/search\?q=([^&]*)/);

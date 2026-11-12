@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { localApi } from "./localApi.js";
+import { ReviewsSection } from "./ReviewsSection.jsx";
 import {
   formatDelay,
   formatRouteEndpoints,
@@ -37,7 +38,6 @@ export function App() {
   const searchTimerRef = useRef(null);
   const searchRequestRef = useRef(0);
   const [listening, setListening] = useState(false);
-  const [rating, setRating] = useState(0);
   const startVoiceSearch = () => {
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -389,10 +389,14 @@ export function App() {
           decoding="async"
         />
       </button>
-      <div className="nav-pill">INDIAN RAILWAYS · LIVE JOURNEYS</div>
+      <div className="nav-links">
+        <a className="nav-link" href="#reviews">Reviews</a>
+        <div className="nav-pill">INDIAN RAILWAYS · LIVE JOURNEYS</div>
+      </div>
     </header>
 
-    {!active ? <main className="hero">
+    {!active ? <>
+    <main className="hero">
       <div className="eyebrow">A clearer way to track Indian trains</div>
       <h1>Know where<br/><em>your train is.</em></h1>
       <p className="sub">Search by train name or number. Choose the journey. Follow every station.</p>
@@ -450,7 +454,9 @@ export function App() {
         })}
       </div>}
       {showEmptyResults && <div className="search-status">No matching trains found.</div>}
-    </main> :
+    </main>
+    <ReviewsSection />
+    </> :
     <main id="journey" className="journey-page">
       <section className="status-page">
         <button type="button" className="back" onClick={reset}>← Search again</button>
@@ -584,24 +590,11 @@ export function App() {
         )}
         
         <div className="rating-section">
-  <div className="rating-title">How was your experience?</div>
-  <div className="rating-stars">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        type="button"
-        className={`rating-star ${star <= rating ? "selected" : ""}`}
-        onClick={() => setRating(star)}
-        aria-label={`${star} star${star > 1 ? "s" : ""}`}
-      >
-        ★
-      </button>
-    ))}
-  </div>
-  {rating > 0 && (
-    <div className="rating-thanks">Thanks for your feedback.</div>
-  )}
-</div>
+          <div className="rating-title">How was your experience?</div>
+          <a className="rating-link" href="#reviews" onClick={reset}>
+            Leave a review on RailDisha
+          </a>
+        </div>
 
 <footer><span>RailDisha</span><span>Know where your train is.</span></footer>
       </section>
