@@ -155,7 +155,60 @@ export function mockTrainResponse(number) {
   };
 }
 
-export function mockLocalRequest(url) {
+function mockReviewsResponse(url, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const href = String(url || "");
+
+  if (href.includes("/api/reviews/moderate")) {
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({
+        success: false,
+        error:
+          "Moderation requires Blob storage and REVIEWS_MODERATION_TOKEN. Local mock mode does not persist reviews.",
+      }),
+    };
+  }
+
+  if (method === "GET") {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        storageConfigured: false,
+        submissionEnabled: false,
+        message:
+          "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+        average: null,
+        count: 0,
+        reviews: [],
+      }),
+    };
+  }
+
+  if (method === "POST") {
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({
+        success: false,
+        code: "storage_unconfigured",
+        error:
+          "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+      }),
+    };
+  }
+
+  return {
+    ok: false,
+    status: 405,
+    json: async () => ({ success: false, error: "Method not allowed." }),
+  };
+}
+
+export function mockLocalRequest(url, options = {}) {
   const href = String(url || "");
   if (/^https?:\/\//i.test(href) && !href.includes("/api/")) {
     return {
@@ -166,6 +219,10 @@ export function mockLocalRequest(url) {
         error: "External train requests are blocked in local mock mode.",
       }),
     };
+  }
+
+  if (href.includes("/api/reviews")) {
+    return mockReviewsResponse(href, options);
   }
 
   const search = href.match(/\/api\/search\?q=([^&]*)/);

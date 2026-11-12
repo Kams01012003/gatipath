@@ -95,6 +95,19 @@ function liveTrainPayload(overrides = {}) {
 
 function setApiHandlers(handlers = {}) {
   localApiState.handler = async (url) => {
+    if (String(url).startsWith("/api/reviews")) {
+      if (handlers.reviews) return handlers.reviews(url);
+      return jsonResponse({
+        success: true,
+        storageConfigured: false,
+        submissionEnabled: false,
+        message:
+          "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+        average: null,
+        count: 0,
+        reviews: [],
+      });
+    }
     if (url.startsWith("/api/search")) {
       const query = decodeURIComponent(url.split("q=")[1] || "");
       if (handlers.search) return handlers.search(query, url);
@@ -360,8 +373,10 @@ describe("journey UI fixes", () => {
     expect(share).toHaveAttribute("type", "button");
     await user.click(share);
 
-    await user.click(screen.getByRole("button", { name: /^5 stars$/i }));
-    expect(screen.getByText(/thanks for your feedback/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /leave a review on raildisha/i })
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/thanks for your feedback/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /search again/i }));
     expect(window.location.search).toBe("");
