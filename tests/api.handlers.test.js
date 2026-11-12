@@ -9,6 +9,7 @@ describe("api/train number validation", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
   });
 
@@ -44,6 +45,7 @@ describe("api/search direct lookup source/destination", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
   });
 
@@ -156,6 +158,7 @@ describe("api/train empty route and static fallback", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
   });
 

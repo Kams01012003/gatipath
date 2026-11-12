@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/blog", "destination": "/blog/index.html" },
     { "source": "/blog/:slug", "destination": "/blog/:slug/index.html" },
-    { "source": "/((?!api/|blog(?:/|$)|assets/|.*\\..*).*)", "destination": "/index.html" }
+    { "source": "/demo", "destination": "/demo/index.html" },
+    { "source": "/((?!api/|blog(?:/|$)|demo(?:/|$)|assets/|.*\\..*).*)", "destination": "/index.html" }
   ]
 }

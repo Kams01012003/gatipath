@@ -1,4 +1,5 @@
 import { isLocalMockEnabled, mockSearchResponse } from "./mockTrains.js";
+import { rejectIfLiveLookupsDisabled } from "./liveLookups.js";
 import {
   directLookupStations,
   readTrainIdentity,
@@ -28,6 +29,10 @@ export default async function handler(req, res) {
 
   if (isLocalMockEnabled()) {
     return res.status(200).json(mockSearchResponse(q));
+  }
+
+  if (rejectIfLiveLookupsDisabled(res)) {
+    return;
   }
 
   const apiKey = process.env.RAILRADAR_API_KEY;

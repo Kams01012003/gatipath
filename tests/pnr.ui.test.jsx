@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { HomePage } from "../src/main.jsx";
+import { LiveHomePage } from "../src/LiveHomePage.jsx";
 import { jsonResponse } from "./helpers/offlineFetch.js";
 
 const localApiState = {
@@ -15,6 +16,9 @@ vi.mock("../src/localApi.js", () => ({
   localApi: vi.fn(async (url, options) => {
     localApiState.calls.push({ url, options });
     if (localApiState.handler) return localApiState.handler(url, options);
+    if (String(url).startsWith("/api/capabilities")) {
+      return jsonResponse({ liveEnabled: false });
+    }
     if (String(url).startsWith("/api/reviews")) {
       return jsonResponse({
         success: true,
@@ -56,13 +60,17 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe("inline PNR status UI", () => {
+function renderLiveHome() {
+  return render(
+    <MemoryRouter>
+      <LiveHomePage />
+    </MemoryRouter>
+  );
+}
+
+describe("preserved live inline PNR status UI", () => {
   it("switches to an inline PNR form without redirecting or calling the API", async () => {
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    );
+    renderLiveHome();
     const user = userEvent.setup();
     const pnrButton = screen.getByRole("button", { name: /pnr status/i });
     expect(pnrButton.tagName).toBe("BUTTON");
@@ -77,11 +85,7 @@ describe("inline PNR status UI", () => {
   });
 
   it("validates empty and short PNRs client-side without calling localApi", async () => {
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    );
+    renderLiveHome();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /pnr status/i }));
     await user.click(screen.getByRole("button", { name: /check status/i }));
@@ -173,11 +177,7 @@ describe("inline PNR status UI", () => {
       throw new Error(`Unhandled ${url}`);
     };
 
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    );
+    renderLiveHome();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /pnr status/i }));
     await user.type(screen.getByLabelText(/10-digit pnr/i), "1234567890");
@@ -254,11 +254,7 @@ describe("inline PNR status UI", () => {
       throw new Error(`Unhandled ${url}`);
     };
 
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    );
+    renderLiveHome();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /pnr status/i }));
     await user.type(screen.getByLabelText(/10-digit pnr/i), "1234567890");
@@ -288,11 +284,7 @@ describe("inline PNR status UI", () => {
       throw new Error(`Unhandled ${url}`);
     };
 
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    );
+    renderLiveHome();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /pnr status/i }));
     await user.type(screen.getByLabelText(/10-digit pnr/i), "1234567890");
@@ -385,11 +377,7 @@ describe("inline PNR status UI", () => {
       throw new Error(`Unhandled ${url}`);
     };
 
-    render(
-      <MemoryRouter>
-        <HomePage />
-      </MemoryRouter>
-    );
+    renderLiveHome();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /pnr status/i }));
     const pnrInput = screen.getByLabelText(/10-digit pnr/i);
@@ -456,5 +444,31 @@ describe("inline PNR status UI", () => {
     });
     expect(screen.queryByText(/CANCELLED LOOKUP/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/10-digit pnr/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("paused homepage (live product preserved separately)", () => {
+  it("shows pause notice and demo links without calling /api/pnr", async () => {
+    localApiState.handler = async (url) => {
+      if (String(url).startsWith("/api/capabilities")) {
+        return jsonResponse({ liveEnabled: false });
+      }
+      if (String(url).startsWith("/api/reviews")) return reviewsFixture();
+      throw new Error(`Unexpected ${url}`);
+    };
+
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/live lookups are paused/i)).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: /try demo/i }).every((el) => el.getAttribute("href") === "/demo")
+    ).toBe(true);
+    expect(
+      localApiState.calls.some(({ url }) => String(url).includes("/api/pnr"))
+    ).toBe(false);
   });
 });

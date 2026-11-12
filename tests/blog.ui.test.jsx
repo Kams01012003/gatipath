@@ -9,6 +9,9 @@ import { jsonResponse } from "./helpers/offlineFetch.js";
 
 vi.mock("../src/localApi.js", () => ({
   localApi: vi.fn(async (url) => {
+    if (String(url).startsWith("/api/capabilities")) {
+      return jsonResponse({ liveEnabled: false });
+    }
     if (String(url).startsWith("/api/reviews")) {
       return jsonResponse({
         success: true,
@@ -33,9 +36,10 @@ beforeEach(() => {
 });
 
 describe("blog and homepage status actions UI", () => {
-  it("exposes Blog nav, homepage preview cards and status action buttons", async () => {
+  it("exposes Blog nav, Try Demo, homepage preview cards and demo status links", async () => {
     render(<App />);
-    expect(screen.getByRole("link", { name: /^blog$/i })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /^blog$/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /try demo/i }).length).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: /guides for clearer train travel/i })
     ).toBeInTheDocument();
@@ -43,18 +47,16 @@ describe("blog and homepage status actions UI", () => {
       screen.getByRole("link", { name: /how to check live train running status/i })
     ).toBeInTheDocument();
 
-    const pnr = screen.getByRole("button", {
-      name: /pnr status\s*check on raildisha/i,
+    expect(await screen.findByText(/live lookups are paused/i)).toBeInTheDocument();
+    const pnr = screen.getByRole("link", { name: /pnr status\s*open sample pnr demo/i });
+    expect(pnr).toHaveAttribute("href", "/demo");
+    const trainStatus = screen.getByRole("link", {
+      name: /train status\s*open sample train demo/i,
     });
-    expect(pnr).not.toHaveAttribute("href");
-
-    const trainStatus = screen.getByRole("button", {
-      name: /train status\s*use search below/i,
-    });
-    expect(trainStatus).toBeInTheDocument();
+    expect(trainStatus).toHaveAttribute("href", "/demo");
   });
 
-  it("focuses the train search from Train Status without calling localApi search", async () => {
+  it("does not call search or pnr APIs from the paused homepage", async () => {
     const { localApi } = await import("../src/localApi.js");
     localApi.mockClear();
     render(
@@ -62,22 +64,25 @@ describe("blog and homepage status actions UI", () => {
         <HomePage />
       </MemoryRouter>
     );
+    expect(await screen.findByText(/live lookups are paused/i)).toBeInTheDocument();
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /pnr status/i }));
-    expect(screen.getByLabelText(/10-digit pnr/i)).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: /train status\s*use search below/i })
+    const cta = screen.getAllByRole("link", { name: /try demo/i }).find((el) =>
+      el.classList.contains("demo-cta-button")
     );
-    const input = screen.getByRole("textbox", {
-      name: /search trains by number or name/i,
-    });
-    expect(document.activeElement).toBe(input);
+    await user.click(cta);
     expect(
       localApi.mock.calls.some(([url]) => String(url).includes("/api/search"))
     ).toBe(false);
     expect(
       localApi.mock.calls.some(([url]) => String(url).includes("/api/pnr"))
     ).toBe(false);
+    expect(
+      localApi.mock.calls.every(
+        ([url]) =>
+          String(url).startsWith("/api/capabilities") ||
+          String(url).startsWith("/api/reviews")
+      )
+    ).toBe(true);
   });
 
   it("renders blog index and article routes without visible dates", async () => {

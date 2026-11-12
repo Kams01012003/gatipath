@@ -19,6 +19,7 @@ export function applyDocumentMeta({
   canonical,
   path,
   ogType = "website",
+  robots,
 }) {
   if (title) document.title = title;
 
@@ -26,6 +27,16 @@ export function applyDocumentMeta({
     name: "description",
     content: description || "",
   });
+
+  if (robots) {
+    upsertMeta('meta[name="robots"]', {
+      name: "robots",
+      content: robots,
+    });
+  } else {
+    const existing = document.head.querySelector('meta[name="robots"]');
+    if (existing) existing.remove();
+  }
 
   const canonicalUrl = canonical || `${SITE}${path || "/"}`;
   let link = document.head.querySelector('link[rel="canonical"]');

@@ -1,4 +1,5 @@
 import { isLocalMockEnabled, mockTrainResponse } from "../mockTrains.js";
+import { rejectIfLiveLookupsDisabled } from "../liveLookups.js";
 import { isExactFiveDigitTrainNumber, readTrainIdentity } from "../../src/trainUtils.js";
 
 export default async function handler(req, res) {
@@ -15,6 +16,10 @@ export default async function handler(req, res) {
 
   if (isLocalMockEnabled()) {
     return res.status(200).json(mockTrainResponse(number));
+  }
+
+  if (rejectIfLiveLookupsDisabled(res)) {
+    return;
   }
 
   const apiKey = process.env.RAILRADAR_API_KEY;

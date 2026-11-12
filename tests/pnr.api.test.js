@@ -158,6 +158,7 @@ describe("PNR API live-path classification (mocked fetch only)", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key-not-real");

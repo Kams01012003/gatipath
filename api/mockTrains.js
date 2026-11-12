@@ -325,6 +325,16 @@ export function mockLocalRequest(url, options = {}) {
     };
   }
 
+  if (href.includes("/api/capabilities")) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        liveEnabled: String(process.env.LIVE_LOOKUPS_ENABLED || "").trim().toLowerCase() === "true",
+      }),
+    };
+  }
+
   if (href.includes("/api/pnr")) {
     return mockPnrLocalResponse(href, options);
   }
