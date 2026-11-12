@@ -49,7 +49,7 @@ describe("blog and homepage status actions UI", () => {
 
     expect(await screen.findByText(/live lookups are paused/i)).toBeInTheDocument();
     const pnr = screen.getByRole("link", { name: /pnr status\s*open sample pnr demo/i });
-    expect(pnr).toHaveAttribute("href", "/demo");
+    expect(pnr).toHaveAttribute("href", "/demo?mode=pnr");
     const trainStatus = screen.getByRole("link", {
       name: /train status\s*open sample train demo/i,
     });

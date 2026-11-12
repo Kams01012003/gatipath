@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { SiteNav } from "./SiteNav.jsx";
 import { applyDocumentMeta } from "./seo.js";
 import {
@@ -24,6 +24,7 @@ import {
   getDemoPnrResult,
   getDemoTrainPayload,
   listDemoTrainDirectory,
+  parseDemoMode,
 } from "./demoData.js";
 
 function DemoBanner() {
@@ -41,8 +42,10 @@ function DemoBadge() {
 
 export function DemoPage() {
   const location = useLocation();
-  const initialMode = location.state?.mode === "pnr" ? "pnr" : "train";
-  const [mode, setMode] = useState(initialMode);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const modeFromQuery = parseDemoMode(searchParams.get("mode"));
+  const [mode, setMode] = useState(modeFromQuery);
   const [query, setQuery] = useState("");
   const [trainError, setTrainError] = useState("");
   const [active, setActive] = useState(null);
@@ -56,10 +59,20 @@ export function DemoPage() {
   }, []);
 
   useEffect(() => {
-    if (location.state?.mode === "pnr" || location.state?.mode === "train") {
-      setMode(location.state.mode);
+    setMode(parseDemoMode(searchParams.get("mode") ?? location.state?.mode));
+  }, [searchParams, location.state]);
+
+  function switchMode(nextMode) {
+    const safe = parseDemoMode(nextMode);
+    setMode(safe);
+    if (safe === "pnr") {
+      resetTrain();
+      navigate("/demo?mode=pnr", { replace: true });
+      return;
     }
-  }, [location.state]);
+    setPnrError("");
+    navigate("/demo", { replace: true });
+  }
 
   const directory = useMemo(() => listDemoTrainDirectory(query), [query]);
 
@@ -151,8 +164,8 @@ export function DemoPage() {
           <em>journeys &amp; PNR.</em>
         </h1>
         <p className="sub">
-          Browser-only fixtures. No live railway lookups. Use the scenario chips
-          or enter a listed sample number.
+          Choose a sample train or PNR to explore RailDisha. All results are
+          examples, not live updates.
         </p>
         <p className="demo-date-label">{DEMO_SAMPLE_DATE_LABEL}</p>
 
@@ -161,10 +174,7 @@ export function DemoPage() {
             type="button"
             className={`status-action status-action-train ${mode === "train" ? "active" : ""}`}
             aria-pressed={mode === "train"}
-            onClick={() => {
-              setMode("train");
-              setPnrError("");
-            }}
+            onClick={() => switchMode("train")}
           >
             <span className="status-action-label">Sample Train Status</span>
             <span className="status-action-note">Demo journeys</span>
@@ -173,10 +183,7 @@ export function DemoPage() {
             type="button"
             className={`status-action status-action-pnr ${mode === "pnr" ? "active" : ""}`}
             aria-pressed={mode === "pnr"}
-            onClick={() => {
-              setMode("pnr");
-              resetTrain();
-            }}
+            onClick={() => switchMode("pnr")}
           >
             <span className="status-action-label">Sample PNR Status</span>
             <span className="status-action-note">Demo reservations</span>

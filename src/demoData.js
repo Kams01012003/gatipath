@@ -10,18 +10,19 @@ export const DEMO_BADGE = "DEMO · SAMPLE DATA";
 
 export const DEMO_SAMPLE_DATE_LABEL = "Sample journey date · 15 Nov 2026";
 
-/** Deterministic IST-labelled sample times (fixed calendar day). */
+/** Deterministic IST-labelled sample times (fixed calendar day, UTC stored). */
 const T = {
   d0_0600: "2026-11-15T00:30:00.000Z", // 06:00 IST
-  d0_0615: "2026-11-15T00:45:00.000Z",
-  d0_0830: "2026-11-15T03:00:00.000Z",
-  d0_0845: "2026-11-15T03:15:00.000Z",
-  d0_1100: "2026-11-15T05:30:00.000Z",
-  d0_1118: "2026-11-15T05:48:00.000Z",
-  d0_1400: "2026-11-15T08:30:00.000Z",
-  d0_1435: "2026-11-15T09:05:00.000Z",
-  d0_1800: "2026-11-15T12:30:00.000Z",
-  d0_1840: "2026-11-15T13:10:00.000Z",
+  d0_0615: "2026-11-15T00:45:00.000Z", // 06:15 IST
+  d0_0830: "2026-11-15T03:00:00.000Z", // 08:30 IST
+  d0_0845: "2026-11-15T03:15:00.000Z", // 08:45 IST
+  d0_1100: "2026-11-15T05:30:00.000Z", // 11:00 IST
+  d0_1118: "2026-11-15T05:48:00.000Z", // 11:18 IST
+  d0_1140: "2026-11-15T06:10:00.000Z", // 11:40 IST (11:00 + 40 min)
+  d0_1158: "2026-11-15T06:28:00.000Z", // 11:58 IST (11:18 + 40 min)
+  d0_1400: "2026-11-15T08:30:00.000Z", // 14:00 IST
+  d0_1800: "2026-11-15T12:30:00.000Z", // 18:00 IST
+  d0_1840: "2026-11-15T13:10:00.000Z", // 18:40 IST
 };
 
 export const DEMO_TRAIN_SCENARIOS = [
@@ -146,7 +147,7 @@ const delayedPayload = {
   data: {
     status: "delayed",
     delayMinutes: 40,
-    lastUpdatedAt: T.d0_1435,
+    lastUpdatedAt: T.d0_1140,
     train: {
       number: "19002",
       name: "Sample Deccan Mail",
@@ -178,7 +179,8 @@ const delayedPayload = {
         stationName: "Pune Junction",
         scheduledArrival: T.d0_1100,
         scheduledDeparture: T.d0_1118,
-        actualArrival: T.d0_1435,
+        actualArrival: T.d0_1140,
+        actualDeparture: T.d0_1158,
         status: "arrived",
         delayArrival: 40,
         delayDeparture: 40,
@@ -205,7 +207,7 @@ const delayedPayload = {
       },
     ],
   },
-  meta: { timestamp: T.d0_1435, source: "demo-fixture" },
+  meta: { timestamp: T.d0_1140, source: "demo-sample" },
 };
 
 const TRAIN_PAYLOADS = {
@@ -309,7 +311,7 @@ const PNR_RESULTS = {
         isCancelled: false,
       },
     ],
-    checkedAt: "2026-11-15T09:05:00.000Z",
+    checkedAt: "2026-11-15T06:10:00.000Z",
   },
   "1000000003": {
     pnrNumber: "1000000003",
@@ -378,7 +380,7 @@ const PNR_RESULTS = {
         currentStatus: "RAC",
         coach: "B1",
         berthNumber: "5",
-        berthCode: "SU",
+        berthCode: "SL",
         isConfirmed: false,
         isRAC: true,
         isWaitlisted: false,
@@ -397,7 +399,7 @@ const PNR_RESULTS = {
         isCancelled: false,
       },
     ],
-    checkedAt: "2026-11-15T09:05:00.000Z",
+    checkedAt: "2026-11-15T06:10:00.000Z",
   },
 };
 
@@ -408,6 +410,11 @@ export function getDemoPnrResult(pnr) {
 
 export const DEMO_UNKNOWN_INPUT_MESSAGE =
   "Use one of the sample numbers shown";
+
+/** Allowlist demo mode from query/state — anything else defaults to train. */
+export function parseDemoMode(value) {
+  return String(value ?? "").trim().toLowerCase() === "pnr" ? "pnr" : "train";
+}
 
 export function getDemoMeta() {
   return {
