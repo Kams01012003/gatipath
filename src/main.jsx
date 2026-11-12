@@ -379,7 +379,16 @@ export function App() {
 
   return <div className="app">
     <header className="nav">
-      <button className="brand" onClick={reset}>gati<span>path</span></button>
+      <button type="button" className="brand" onClick={reset} aria-label="RailDisha home">
+        <img
+          className="brand-logo"
+          src="/raildisha-logo.png"
+          alt=""
+          width="2172"
+          height="724"
+          decoding="async"
+        />
+      </button>
       <div className="nav-pill">INDIAN RAILWAYS · LIVE JOURNEYS</div>
     </header>
 
@@ -594,7 +603,7 @@ export function App() {
   )}
 </div>
 
-<footer><span>Gatipath</span><span>Know where your train is.</span></footer>
+<footer><span>RailDisha</span><span>Know where your train is.</span></footer>
       </section>
     </main>}
 
