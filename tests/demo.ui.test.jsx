@@ -55,15 +55,22 @@ describe("Demo page (browser fixtures only)", () => {
     expect(localApiState.calls).toEqual([]);
   });
 
-  it("shows delayed sample with station delay times", async () => {
+  it("shows delayed sample with coherent 40-minute late times", async () => {
     renderDemo();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /delayed sample/i }));
     expect(
       await screen.findByRole("heading", { name: /sample deccan mail/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/sample status · .*late/i)).toBeInTheDocument();
+    expect(screen.getByText(/sample status · 40 min late/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Pune Junction/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/11:00/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sample actual 11:40/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Sample actual 02:35/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Choose a sample train or PNR to explore RailDisha/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/fixtures|Browser-only/i)).not.toBeInTheDocument();
     expect(localApiState.calls).toEqual([]);
   });
 
@@ -115,6 +122,37 @@ describe("Demo page (browser fixtures only)", () => {
     await user.type(screen.getByLabelText(/sample 10-digit pnr/i), "5555555555");
     await user.click(screen.getByRole("button", { name: /^show sample$/i }));
     expect(await screen.findByText(DEMO_UNKNOWN_INPUT_MESSAGE)).toBeInTheDocument();
+    expect(localApiState.calls).toEqual([]);
+  });
+
+  it("opens PNR mode immediately from /demo?mode=pnr (refresh-safe)", async () => {
+    renderDemo("/demo?mode=pnr");
+    expect(
+      screen.getByRole("button", { name: /sample pnr status/i })
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByLabelText(/sample 10-digit pnr/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/sample train number or name/i)
+    ).not.toBeInTheDocument();
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
+      "https://raildisha.com/demo"
+    );
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe(
+      "noindex,nofollow"
+    );
+    expect(localApiState.calls).toEqual([]);
+  });
+
+  it("defaults /demo and unknown mode values to train", async () => {
+    renderDemo("/demo?mode=evil");
+    expect(
+      screen.getByRole("button", { name: /sample train status/i })
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByLabelText(/sample train number or name/i)
+    ).toBeInTheDocument();
     expect(localApiState.calls).toEqual([]);
   });
 });

@@ -56,8 +56,7 @@ export function PausedHomePage() {
         <div className="status-actions" role="group" aria-label="Quick status checks">
           <Link
             className="status-action status-action-pnr"
-            to="/demo"
-            state={{ mode: "pnr" }}
+            to="/demo?mode=pnr"
           >
             <span className="status-action-label">PNR Status</span>
             <span className="status-action-note">Open sample PNR demo</span>
@@ -65,7 +64,6 @@ export function PausedHomePage() {
           <Link
             className="status-action status-action-train"
             to="/demo"
-            state={{ mode: "train" }}
           >
             <span className="status-action-label">Train Status</span>
             <span className="status-action-note">Open sample train demo</span>
