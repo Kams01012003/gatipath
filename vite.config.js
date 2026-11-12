@@ -10,4 +10,7 @@ export default defineConfig({
     restoreMocks: true,
     clearMocks: true,
   },
+  build: {
+    // Keep hashed assets; prerender script reuses index.html asset tags.
+  },
 });

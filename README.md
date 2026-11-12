@@ -1,6 +1,6 @@
 # RailDisha
 
-RailDisha is a one-page Indian train journey tracker. The public website domain is https://raildisha.com.
+RailDisha is an Indian train journey tracker with live search, ratings, and a published blog. The public website domain is https://raildisha.com.
 
 ## Live data
 
@@ -22,9 +22,15 @@ The logo artwork already includes the Hindi tagline, so the header does not rend
 
 Development-only mock mode uses the existing `GATIPATH_MOCK` / `VITE_GATIPATH_MOCK` environment variable names. Those identifiers are intentionally left unchanged so local and hosted mock wiring keeps working.
 
+## Blog
+
+Published guides live under `/blog` with prerendered HTML for crawlable titles, descriptions and canonical URLs on `https://raildisha.com`. Source content is in `src/blog-articles.json`. `npm run build` runs `scripts/prerender-blog.mjs` to emit static blog pages plus `sitemap.xml` / `robots.txt`.
+
+Homepage quick actions: **Train Status** focuses the existing search (no provider call); **PNR Status** opens the official Indian Railways PNR enquiry in a new tab.
+
 ## Hosting
 
-Production is published through the existing Vercel GitHub integration for this repository (`gatipath.vercel.app`). Custom domain `raildisha.com` is documented as the intended public site; connecting it requires authorized Vercel project domain access.
+Production is published through the existing Vercel GitHub integration. The public site is https://raildisha.com.
 
 ## Ratings & reviews (Vercel Blob)
 

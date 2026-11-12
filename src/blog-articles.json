@@ -1,0 +1,302 @@
+[
+  {
+    "title": "How to check live train running status in India",
+    "sections": [
+      {
+        "heading": null,
+        "paragraphs": [
+          "Checking live train running status helps you plan around the train that is actually running, rather than relying only on its timetable. Before leaving home, identify the correct train, select the relevant journey where requested, and read the latest available update for your boarding station. A delay shown earlier in the day can change as the journey continues."
+        ]
+      },
+      {
+        "heading": "Start with the correct train number",
+        "paragraphs": [
+          "Use the train number printed on your ticket whenever possible. Similar names can make a name-only search confusing, particularly when there are services in both directions. If you search by name on RailDisha, compare the matching result with your ticket before opening it. Check the destination and direction as well as the name."
+        ]
+      },
+      {
+        "heading": "Check which journey you are tracking",
+        "paragraphs": [
+          "An overnight service can still be running after the calendar date changes. Where a tracking service asks for a journey or start date, read its label carefully and select the departure instance that matches your train. Your boarding date at an intermediate station may be later than the date the train left its starting station. Do not select a different run merely because it has the same number."
+        ]
+      },
+      {
+        "heading": "Read scheduled and expected times separately",
+        "paragraphs": [
+          "Scheduled arrival is the timetable time. Expected arrival is an estimate based on available running information. NTES, the official National Train Enquiry System, offers current running status and expected arrival or departure at a queried station. Those estimates help with planning, but they can change. For example, a scheduled arrival of 18:00 and an expected arrival of 18:35 indicates an estimated 35-minute delay at that station; it does not guarantee that every later stop will have the same delay."
+        ]
+      },
+      {
+        "heading": "Use the update time to judge freshness",
+        "paragraphs": [
+          "Look for a last-updated time or a recently reported station, when provided. A result left open on your phone is not automatically a fresh result. Check again before starting your trip to the station, and allow time for local traffic, station entry and finding your coach. Avoid planning to arrive exactly at an estimated train arrival time."
+        ]
+      },
+      {
+        "heading": "What to do when live status is unavailable",
+        "paragraphs": [
+          "An error or a missing update is not evidence that the train is on time or cancelled. Confirm the number and selected journey, then check the official NTES service if you need another source. At the station, follow current announcements and display boards for boarding information. Do not treat an old screenshot as a current status update."
+        ]
+      },
+      {
+        "heading": "Frequently asked questions",
+        "paragraphs": [
+          "Is train running status the same as PNR status? No. Running status concerns the train journey; PNR status concerns your reservation.",
+          "Can the delay reduce later? It can change during the journey. Use the latest estimate for the station that matters to you.",
+          "Does a blank arrival field mean cancellation? No. A blank field may mean information is unavailable or not applicable. Check an official update before drawing a conclusion."
+        ]
+      },
+      {
+        "heading": "Check your train before you leave",
+        "paragraphs": [
+          "Open RailDisha and search by train name or number to view the journey information available for your service. For a simpler departure-day routine, also read our guides to train schedules and PNR status."
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "label": "CRIS explanation of NTES running information",
+        "urls": [
+          "https://www.cris.org.in/loadpage?page=proNTES"
+        ]
+      },
+      {
+        "label": "Official NTES service",
+        "urls": [
+          "https://enquiry.indianrail.gov.in/"
+        ]
+      }
+    ],
+    "seoTitle": "Live Train Running Status Guide | RailDisha",
+    "path": "/blog/how-to-check-live-train-running-status",
+    "keyword": "live train running status",
+    "relatedKeywords": "train running status, live train status, current train status, train delay status, spot your train",
+    "description": "Learn how to check live train running status, understand delays and expected arrival times, and choose the right journey before leaving for the station.",
+    "linkInstructions": "Internal links for publication: Link “Open RailDisha” to /. Link “train schedules” to /blog/indian-railways-train-schedule-guide and “PNR status” to /blog/pnr-status-cnf-rac-wl-guide once published."
+  },
+  {
+    "title": "PNR status explained and what CNF RAC and WL mean",
+    "sections": [
+      {
+        "heading": null,
+        "paragraphs": [
+          "A PNR status check answers a different question from a train search. It helps you understand the reservation attached to your ticket. Before travelling, review the current status for each passenger, check your journey details, and confirm whether the reservation chart has been prepared. Do not assume the status shown when you booked is still the latest one."
+        ]
+      },
+      {
+        "heading": "Where to check PNR status",
+        "paragraphs": [
+          "Use the Passenger Current Status Enquiry on the official Indian Railways website and enter the PNR from your ticket. Keep the ticket available so you can compare the result with your journey. RailDisha’s train tracker serves a different purpose: use it for available train journey information, and use the official reservation enquiry for your PNR check."
+        ]
+      },
+      {
+        "heading": "Understand the main reservation codes",
+        "paragraphs": [
+          "The official enquiry identifies CNF as confirmed, RAC as Reservation Against Cancellation, and WL as a waiting-list number. It also distinguishes waiting-list categories such as GNWL, RLWL, PQWL and TQWL. These categories are not interchangeable. Read the actual status attached to your passenger rather than comparing only the number with another traveller’s ticket."
+        ]
+      },
+      {
+        "heading": "Compare booking status with current status",
+        "paragraphs": [
+          "Booking status records the position associated with the reservation when it was made. Current status is the result to review now. As an illustrative example, a ticket may have shown WL 18 when booked and later show a different current position. That example is not a prediction for your booking: status movement depends on the particular service, date, class and reservation conditions."
+        ]
+      },
+      {
+        "heading": "Check the charting status before travel",
+        "paragraphs": [
+          "Indian Railways notes that current status may change before final chart preparation. Its enquiry also notes that coach and berth information for a confirmed reservation becomes available after chart preparation. Check the result again when that information is available. Avoid relying on a generic charting-time claim, because the relevant timing and circumstances should be confirmed through current official information."
+        ]
+      },
+      {
+        "heading": "Review each passenger and the boarding details",
+        "paragraphs": [
+          "When several people share a booking, read every passenger’s current status. Do not assume the first passenger’s result describes the whole group. Also compare the train number, boarding station and travel date with your plans. If a status remains unclear, consult the current IRCTC or Indian Railways instructions for your ticket type before deciding whether to board, cancel or make alternative arrangements."
+        ]
+      },
+      {
+        "heading": "Frequently asked questions",
+        "paragraphs": [
+          "Does CNF tell me whether the train is delayed? No. Reservation status does not describe current train movement. Check running information separately.",
+          "Does a confirmation prediction guarantee a berth? No. The official enquiry describes prediction information as indicative and says actual status can differ.",
+          "Should I share my PNR publicly to get help? Prefer official enquiry channels and avoid posting a full ticket in a public comment. Share only what is necessary with a trusted support channel."
+        ]
+      },
+      {
+        "heading": "Use two checks for a clearer journey plan",
+        "paragraphs": [
+          "First confirm your reservation through the official PNR enquiry. Then check your train’s running information before leaving for the station. Read our live train running status guide for help interpreting delays and expected arrival times."
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "label": "Indian Railways Passenger Current Status Enquiry and status legends",
+        "urls": [
+          "https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en3"
+        ]
+      }
+    ],
+    "seoTitle": "PNR Status Explained CNF RAC and WL | RailDisha",
+    "path": "/blog/pnr-status-cnf-rac-wl-guide",
+    "keyword": "PNR status",
+    "relatedKeywords": "PNR status check, check PNR status, CNF meaning, RAC meaning, WL meaning, railway reservation status",
+    "description": "Understand PNR status, CNF, RAC and WL, learn the difference between booking and current status, and know what to recheck before your train journey.",
+    "linkInstructions": "Internal links for publication: Link “live train running status guide” to /blog/how-to-check-live-train-running-status once published. Link “RailDisha’s train tracker” to /. Do not link to an unbuilt RailDisha PNR tool."
+  },
+  {
+    "title": "How to read an Indian Railways train schedule",
+    "sections": [
+      {
+        "heading": null,
+        "paragraphs": [
+          "An Indian Railways train schedule is your starting point for understanding a journey. It shows the planned route and timing, so you can identify where to board, when the train is scheduled to stop and whether the journey continues into another day. On the day of travel, use current running information alongside that timetable."
+        ]
+      },
+      {
+        "heading": "Search by the train you intend to take",
+        "paragraphs": [
+          "Begin with the train number or name. Indian Railways’ official Train Schedule enquiry supports searching with characters from a train name or digits from a train number. Confirm the full result before reading the timetable. A similar name, the return service or a different destination can lead you to the wrong schedule."
+        ]
+      },
+      {
+        "heading": "Find your boarding and destination stations",
+        "paragraphs": [
+          "Locate the exact station named on your ticket, then find the destination in the same route. A city can have more than one railway station, so a familiar city name alone is not enough. Read the station name and code together. This is especially useful when arranging a taxi or telling someone where to collect you after arrival."
+        ]
+      },
+      {
+        "heading": "Separate arrival departure and halt time",
+        "paragraphs": [
+          "Arrival tells you when the train is scheduled to reach a stop. Departure tells you when it is scheduled to leave. Halt time describes the planned stop between them. For example, an arrival at 09:10 and a departure at 09:15 gives a scheduled five-minute halt. Use this only as a timetable example, not as a reason to arrive at the platform just before departure."
+        ]
+      },
+      {
+        "heading": "Read running days and journey days carefully",
+        "paragraphs": [
+          "The official timetable includes running days and a day column for stations along the route. These answer different questions. Running days tell you which days the service leaves its source. Journey-day numbers help you follow its progress across calendar dates. In an illustrative trip, a train leaving its source late on Monday may reach an intermediate boarding station early on Tuesday. Confirm the booking and station date rather than using the source weekday alone."
+        ]
+      },
+      {
+        "heading": "Check whether the schedule applies to your service",
+        "paragraphs": [
+          "The Passenger Reservation Enquiry schedule page states that it displays reserved trains defined in the PRS system. If a service is missing there, that does not by itself prove it does not run. Use the appropriate official railway enquiry for that service. Also check current information when travelling on a special service or when a route change has been announced."
+        ]
+      },
+      {
+        "heading": "Keep the timetable separate from live running",
+        "paragraphs": [
+          "A schedule describes the planned journey. A running update describes available information about the actual journey. If your train is delayed, the timetable may still show its original departure time. Keep the train number and boarding station handy, then consult current status before setting off. If live information cannot be retrieved, a scheduled time should not be presented as a verified live estimate."
+        ]
+      },
+      {
+        "heading": "Frequently asked questions",
+        "paragraphs": [
+          "Why is arrival blank at the first station? An originating station may have a departure without a preceding arrival for that service. Similarly, the final stop may not have an onward departure.",
+          "Does the same timetable guarantee the same platform? Use current station displays and announcements for platform guidance.",
+          "Can I use the timetable to compare trains? Yes, but also confirm the journey date, operating days and current reservation availability before booking."
+        ]
+      },
+      {
+        "heading": "Plan the route then check the journey",
+        "paragraphs": [
+          "Use the timetable to understand your trip, then open RailDisha to search for available journey information by train name or number. Our trains between stations guide explains how to compare route options before choosing a service."
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "label": "Indian Railways official Train Schedule enquiry",
+        "urls": [
+          "https://www.indianrail.gov.in/enquiry/SCHEDULE/TrainSchedule.html?locale=e"
+        ]
+      }
+    ],
+    "seoTitle": "Indian Railways Train Schedule Guide | RailDisha",
+    "path": "/blog/indian-railways-train-schedule-guide",
+    "keyword": "Indian Railways train schedule",
+    "relatedKeywords": "train schedule, train timetable, train route, train arrival and departure time, train running days",
+    "description": "Read an Indian Railways train schedule correctly, including stations, running days, arrival times, departure times and overnight journey day numbers.",
+    "linkInstructions": "Internal links for publication: Link “open RailDisha” to /. Link “trains between stations guide” to /blog/how-to-find-trains-between-stations and “current status” to /blog/how-to-check-live-train-running-status once published."
+  },
+  {
+    "title": "How to find trains between stations and compare your options",
+    "sections": [
+      {
+        "heading": null,
+        "paragraphs": [
+          "Searching for trains between stations is useful when you know where you want to travel but have not chosen a service. Begin with the exact source and destination, select the travel date where requested, and compare the results against your actual plans. The best option depends on where you can board, when you need to arrive and whether suitable accommodation is available."
+        ]
+      },
+      {
+        "heading": "Choose exact stations rather than only city names",
+        "paragraphs": [
+          "Check which railway station is convenient for your starting point and destination. A result for a different terminal can change your local travel time substantially. Write down the station names and codes before comparing services. If you consider another station in the same city, check the additional road journey rather than assuming it is equally convenient."
+        ]
+      },
+      {
+        "heading": "Use an official search for the route",
+        "paragraphs": [
+          "Indian Railways offers a Reserved Train Between Stations enquiry with source, destination and journey-date fields. The official NTES app also lists Trains between Stations among its features. Use these services to identify suitable trains, then record the number of any service you want to investigate further. Once you have chosen a service, search its name or number on RailDisha to view the available journey information."
+        ]
+      },
+      {
+        "heading": "Compare the whole travel window",
+        "paragraphs": [
+          "Look beyond the departure time alone. Consider the scheduled arrival, whether the trip crosses midnight and how you will reach your final destination after leaving the station. A train that arrives earlier on paper may be less practical if local transport is difficult at that hour. For an appointment or onward connection, allow a sensible margin rather than treating a timetable arrival as guaranteed."
+        ]
+      },
+      {
+        "heading": "Confirm that the train runs on your date",
+        "paragraphs": [
+          "A route appearing in a search is only the beginning of the check. Read the service’s operating days and match them to your intended journey. Take extra care if you board after midnight at an intermediate stop: the service may have left its source on the previous date. Compare the booking details with the station and date on which you will actually board."
+        ]
+      },
+      {
+        "heading": "Check availability before making a final choice",
+        "paragraphs": [
+          "A train serving both stations does not mean a seat or berth is available for your chosen date and class. Check current availability through the official booking or reservation channel. Compare alternatives if needed, but confirm the final details before paying. Train running status and reservation availability serve different purposes, so one should not be used as a substitute for the other."
+        ]
+      },
+      {
+        "heading": "Keep connections realistic",
+        "paragraphs": [
+          "If you cannot find a convenient direct train, you may consider changing trains. Check that both services use the intended interchange station and allow time for getting off, finding the next platform and handling delays. If the transfer involves different stations, include the road journey too. A short connection shown in separate timetable searches is not a protected or guaranteed connection."
+        ]
+      },
+      {
+        "heading": "Frequently asked questions",
+        "paragraphs": [
+          "Why does my search show no direct train? Recheck station spelling, direction and date. A different nearby station or travel day may offer alternatives, but verify those options before booking.",
+          "Can I compare only travel duration? Compare arrival date, boarding convenience and availability too. The shortest scheduled trip is not automatically the easiest journey.",
+          "What should I check after booking? Review your PNR status through official enquiry and your train’s running information near departure."
+        ]
+      },
+      {
+        "heading": "Turn your shortlist into a travel plan",
+        "paragraphs": [
+          "Save the train number, station details and booking confirmation for your selected service. Before departure, use RailDisha to look up available train journey information, and consult our schedule and PNR guides if you need help reading the details."
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "label": "Indian Railways Reserved Train Between Stations enquiry",
+        "urls": [
+          "https://indianrail.gov.in/enquiry/TBIS/TrainBetweenImportantStations.jsp"
+        ]
+      },
+      {
+        "label": "Official NTES app listing published by CRIS",
+        "urls": [
+          "https://play.google.com/store/apps/details?id=cris.icms.ntes"
+        ]
+      }
+    ],
+    "seoTitle": "How to Find Trains Between Stations | RailDisha",
+    "path": "/blog/how-to-find-trains-between-stations",
+    "keyword": "trains between stations",
+    "relatedKeywords": "trains between two stations, train search, source to destination trains, train journey planning, direct train search",
+    "description": "Find trains between stations and compare boarding points, journey dates, departure times and travel duration before checking availability and booking.",
+    "linkInstructions": "Internal links for publication: Link “use RailDisha” to /. Link “schedule” to /blog/indian-railways-train-schedule-guide and “PNR guides” to /blog/pnr-status-cnf-rac-wl-guide once published."
+  }
+]
