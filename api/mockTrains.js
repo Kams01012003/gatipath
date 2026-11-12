@@ -205,6 +205,113 @@ function mockReviewsResponse(url, options = {}) {
   };
 }
 
+export function mockPnrResponse(pnr) {
+  const value = String(pnr || "").trim();
+  if (!/^\d{10}$/.test(value)) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        error: "Enter a valid 10-digit PNR.",
+      },
+    };
+  }
+
+  if (value === "0000000000") {
+    return {
+      status: 404,
+      body: {
+        success: false,
+        error: "No reservation record was found for that PNR.",
+      },
+    };
+  }
+
+  if (value === "9999999999") {
+    return {
+      status: 429,
+      body: {
+        success: false,
+        error:
+          "PNR status is temporarily unavailable because the data provider has reached its request limit. Please try again later.",
+      },
+    };
+  }
+
+  // Documented-shape fixture for offline tests only — never used as production data.
+  return {
+    status: 200,
+    body: {
+      success: true,
+      data: {
+        pnrNumber: value,
+        train: {
+          number: "12952",
+          name: "MUMBAI RAJDHANI",
+          source: { code: "NDLS", name: "New Delhi" },
+          destination: { code: "MMCT", name: "Mumbai Central" },
+          boardingPoint: { code: "NDLS", name: "New Delhi" },
+          reservationUpto: { code: "MMCT", name: "Mumbai Central" },
+        },
+        journey: {
+          date: "2026-08-20",
+          class: "3A",
+          quota: "GN",
+        },
+        charting: {
+          isPrepared: false,
+          status: "Chart Not Prepared",
+          chartUrl: "https://www.irctc.co.in/online-charts/",
+        },
+        passengers: [
+          {
+            passengerNumber: 1,
+            bookingStatus: "WL/14/GN",
+            currentStatus: "CNF",
+            coach: "B4",
+            berthNumber: "58",
+            berthCode: "LB",
+            isConfirmed: true,
+            isRAC: false,
+            isWaitlisted: false,
+            isCancelled: false,
+          },
+        ],
+        checkedAt: "2026-11-02T14:02:30+05:30",
+      },
+      sourceNote:
+        "Reservation details are provided for convenience and may change. Confirm critical details on official Indian Railways channels when needed.",
+    },
+  };
+}
+
+function mockPnrLocalResponse(url, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  if (method !== "POST") {
+    return {
+      ok: false,
+      status: 405,
+      json: async () => ({ success: false, error: "Method not allowed." }),
+    };
+  }
+
+  let pnr = "";
+  try {
+    const body =
+      typeof options.body === "string" ? JSON.parse(options.body || "{}") : options.body || {};
+    pnr = String(body.pnr || body.pnrNumber || "").replace(/\D/g, "");
+  } catch {
+    pnr = "";
+  }
+
+  const mocked = mockPnrResponse(pnr);
+  return {
+    ok: mocked.status >= 200 && mocked.status < 300,
+    status: mocked.status,
+    json: async () => mocked.body,
+  };
+}
+
 export function mockLocalRequest(url, options = {}) {
   const href = String(url || "");
   if (/^https?:\/\//i.test(href) && !href.includes("/api/")) {
@@ -216,6 +323,10 @@ export function mockLocalRequest(url, options = {}) {
         error: "External train requests are blocked in local mock mode.",
       }),
     };
+  }
+
+  if (href.includes("/api/pnr")) {
+    return mockPnrLocalResponse(href, options);
   }
 
   if (href.includes("/api/reviews")) {

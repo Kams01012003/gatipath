@@ -51,6 +51,8 @@ describe("RailDisha blog content and SEO data", () => {
     const pnr = getArticleBySlug("pnr-status-cnf-rac-wl-guide");
     const pnrHtml = renderArticleBodyHtml(pnr);
     expect(pnrHtml).toContain('href="/blog/how-to-check-live-train-running-status"');
+    expect(pnrHtml).toContain('href="/"');
+    expect(pnrHtml).toMatch(/PNR Status/);
     expect(pnrHtml).toContain("https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en3");
   });
 

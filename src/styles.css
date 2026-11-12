@@ -782,3 +782,159 @@ button{cursor:pointer}.sr-only{position:absolute;width:1px;height:1px;padding:0;
     font-size: 16px;
   }
 }
+
+.status-action.active {
+  border-color: #b52a1d;
+  box-shadow: 0 0 0 1px #b52a1d33, 0 14px 34px #00000010;
+}
+
+.pnr-panel {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.pnr-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #777;
+  margin-bottom: 8px;
+}
+
+.pnr-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.pnr-row input {
+  width: 100%;
+  height: 64px;
+  border: 1px solid #d7d5cf;
+  border-radius: 18px;
+  background: #fff;
+  padding: 0 18px;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  outline: none;
+}
+
+.pnr-row input:focus {
+  border-color: #9d9b94;
+}
+
+.pnr-submit {
+  border: 0;
+  border-radius: 18px;
+  background: #171717;
+  color: #fff;
+  padding: 0 22px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pnr-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pnr-error {
+  color: #8e2a20;
+}
+
+.pnr-result {
+  margin-top: 18px;
+  border: 1px solid #deddd7;
+  border-radius: 20px;
+  background: #fff;
+  padding: 20px 22px;
+  box-shadow: 0 12px 34px #00000008;
+}
+
+.pnr-result-head {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+
+.pnr-result-head small,
+.pnr-chart small {
+  display: block;
+  color: #888;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.pnr-result-head strong,
+.pnr-chart strong {
+  font: 650 18px/1.3 "Space Grotesk", sans-serif;
+  color: #171717;
+}
+
+.pnr-route,
+.pnr-chart,
+.pnr-checked,
+.pnr-source-note {
+  margin-top: 14px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pnr-passengers {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.pnr-passengers li {
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.pnr-passenger-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pnr-passenger-meta {
+  margin-top: 6px;
+  color: #777;
+  font-size: 13px;
+}
+
+.pnr-confirm-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: #b52a1d;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pnr-confirm-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 650px) {
+  .pnr-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pnr-submit {
+    height: 54px;
+  }
+
+  .pnr-result-head {
+    grid-template-columns: 1fr;
+  }
+}

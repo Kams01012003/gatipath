@@ -15,10 +15,12 @@ import {
   mapLiveTrain,
   trainHeading,
 } from "./trainUtils.js";
+import {
+  isExactTenDigitPnr,
+  normalizePnrInput,
+  OFFICIAL_PNR_CONFIRMATION_URL,
+} from "./pnrUtils.js";
 import "./styles.css";
-
-const PNR_ENQUIRY_URL =
-  "https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en3";
 
 function isAbortError(error) {
   return error?.name === "AbortError";
@@ -47,21 +49,113 @@ export function HomePage() {
   const searchTimerRef = useRef(null);
   const searchRequestRef = useRef(0);
   const [listening, setListening] = useState(false);
+  const [heroMode, setHeroMode] = useState("train");
+  const [pnrInput, setPnrInput] = useState("");
+  const [pnrLoading, setPnrLoading] = useState(false);
+  const [pnrError, setPnrError] = useState("");
+  const [pnrResult, setPnrResult] = useState(null);
+  const [pnrSourceNote, setPnrSourceNote] = useState("");
   const searchInputRef = useRef(null);
+  const pnrInputRef = useRef(null);
+  const pnrAbortRef = useRef(null);
+  const pnrRequestRef = useRef(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     applyDocumentMeta(getHomeMeta());
   }, []);
 
-  function focusTrainSearch(event) {
+  function cancelPnrLookup() {
+    pnrRequestRef.current += 1;
+    if (pnrAbortRef.current) {
+      pnrAbortRef.current.abort();
+      pnrAbortRef.current = null;
+    }
+  }
+
+  function clearPnrPanel() {
+    cancelPnrLookup();
+    setPnrLoading(false);
+    setPnrError("");
+    setPnrResult(null);
+    setPnrSourceNote("");
+  }
+
+  function activateTrainMode(event) {
     event?.preventDefault?.();
-    const input = searchInputRef.current || document.getElementById("train-search");
+    setHeroMode("train");
+    clearPnrPanel();
+  }
+
+  function activatePnrMode(event) {
+    event?.preventDefault?.();
+    setHeroMode("pnr");
+    // Mode change alone must not call the provider.
+    cancelPnrLookup();
+    setPnrLoading(false);
+    setPnrError("");
+    setPnrResult(null);
+    setPnrSourceNote("");
+  }
+
+  useEffect(() => {
+    if (heroMode === "train") {
+      const input = searchInputRef.current || document.getElementById("train-search");
+      if (!input) return;
+      input.focus({ preventScroll: true });
+      return;
+    }
+    const input = pnrInputRef.current || document.getElementById("pnr-input");
     if (!input) return;
-    // Focus without changing the query so no provider search is fired.
     input.focus({ preventScroll: true });
-    if (typeof input.scrollIntoView === "function") {
-      input.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [heroMode]);
+
+  async function submitPnr(event) {
+    event.preventDefault();
+    const pnr = normalizePnrInput(pnrInput);
+    setPnrInput(pnr);
+    setPnrError("");
+    setPnrResult(null);
+    setPnrSourceNote("");
+
+    if (!isExactTenDigitPnr(pnr)) {
+      setPnrError("Enter a valid 10-digit PNR.");
+      return;
+    }
+
+    cancelPnrLookup();
+    const requestId = pnrRequestRef.current + 1;
+    pnrRequestRef.current = requestId;
+    const controller = new AbortController();
+    pnrAbortRef.current = controller;
+    setPnrLoading(true);
+
+    try {
+      const response = await localApi("/api/pnr", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        },
+        body: JSON.stringify({ pnr }),
+        signal: controller.signal,
+      });
+      const body = await response.json();
+      if (requestId !== pnrRequestRef.current) return;
+      if (!response.ok || !body.success) {
+        throw new Error(body.error || "PNR status is temporarily unavailable. Please try again later.");
+      }
+      setPnrResult(body.data || null);
+      setPnrSourceNote(body.sourceNote || "");
+    } catch (error) {
+      if (requestId !== pnrRequestRef.current || isAbortError(error)) return;
+      setPnrResult(null);
+      setPnrError(error.message || "PNR status is temporarily unavailable. Please try again later.");
+    } finally {
+      if (requestId === pnrRequestRef.current) {
+        setPnrLoading(false);
+        pnrAbortRef.current = null;
+      }
     }
   }
 
@@ -132,6 +226,7 @@ export function HomePage() {
   function clearTrainSelection() {
     cancelTrainLoad();
     cancelTrainSearch();
+    clearPnrPanel();
     skipSearchRef.current = null;
     loadedTrainRef.current = null;
     setSelected(null);
@@ -145,6 +240,8 @@ export function HomePage() {
     setLiveError("");
     setLoading(false);
     setSearching(false);
+    setHeroMode("train");
+    setPnrInput("");
   }
 
   useEffect(() => {
@@ -421,80 +518,197 @@ export function HomePage() {
       <p className="sub">Search by train name or number. Choose the journey. Follow every station.</p>
 
       <div className="status-actions" role="group" aria-label="Quick status checks">
-        <a
-          className="status-action status-action-pnr"
-          href={PNR_ENQUIRY_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span className="status-action-label">PNR Status</span>
-          <span className="status-action-note">Opens Indian Railways</span>
-        </a>
         <button
           type="button"
-          className="status-action status-action-train"
-          onClick={focusTrainSearch}
+          className={`status-action status-action-pnr ${heroMode === "pnr" ? "active" : ""}`}
+          aria-pressed={heroMode === "pnr"}
+          onClick={activatePnrMode}
+        >
+          <span className="status-action-label">PNR Status</span>
+          <span className="status-action-note">Check on RailDisha</span>
+        </button>
+        <button
+          type="button"
+          className={`status-action status-action-train ${heroMode === "train" ? "active" : ""}`}
+          aria-pressed={heroMode === "train"}
+          onClick={activateTrainMode}
         >
           <span className="status-action-label">Train Status</span>
           <span className="status-action-note">Use search below</span>
         </button>
       </div>
 
-      <div className="search-wrap">
-        <div className="search-icon" aria-hidden="true">⌕</div>
-        <label htmlFor="train-search" className="sr-only">Search trains by number or name</label>
-        <input
-          id="train-search"
-          ref={searchInputRef}
-          autoFocus
-          value={query}
-          onChange={e => onQueryChange(e.target.value)}
-          placeholder="Train number or name"
-          aria-label="Search trains by number or name"
-        />
-        <button
-  type="button"
-  className={`voice-button ${listening ? "listening" : ""}`}
-  onClick={startVoiceSearch}
-  aria-label="Search by voice"
->
-  <svg
-  width="22"
-  height="22"
-  viewBox="0 0 24 24"
-  fill="none"
-  stroke="currentColor"
-  strokeWidth="2"
-  strokeLinecap="round"
-  strokeLinejoin="round"
-  aria-hidden="true"
->
-  <rect x="9" y="2" width="6" height="12" rx="3" />
-  <path d="M5 10a7 7 0 0 0 14 0" />
-  <line x1="12" y1="19" x2="12" y2="22" />
-  <line x1="8" y1="22" x2="16" y2="22" />
-</svg>
-</button>
-        {query && <button className="clear" onClick={() => onQueryChange("")} aria-label="Clear search">×</button>}
-      </div>
-      {searching && <div className="search-status">Searching live train directory…</div>}
-      {searchError && <div className="search-status">{searchError}</div>}
-      {results.length > 0 && <div className="results">
-        {results.map(t => {
-          const route = formatRouteEndpoints(t.source, t.destination);
-          return (
-            <button className="result" key={t.number} onClick={() => choose(t)}>
-              <span className="train-mark">↗</span>
-              <span>
-                <b>{t.name}</b>
-                <small>{route ? `${t.number} · ${route}` : t.number}</small>
-              </span>
-              <span className="arrow">→</span>
+      {heroMode === "train" ? (
+        <>
+          <div className="search-wrap">
+            <div className="search-icon" aria-hidden="true">⌕</div>
+            <label htmlFor="train-search" className="sr-only">Search trains by number or name</label>
+            <input
+              id="train-search"
+              ref={searchInputRef}
+              autoFocus
+              value={query}
+              onChange={e => onQueryChange(e.target.value)}
+              placeholder="Train number or name"
+              aria-label="Search trains by number or name"
+            />
+            <button
+              type="button"
+              className={`voice-button ${listening ? "listening" : ""}`}
+              onClick={startVoiceSearch}
+              aria-label="Search by voice"
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="9" y="2" width="6" height="12" rx="3" />
+                <path d="M5 10a7 7 0 0 0 14 0" />
+                <line x1="12" y1="19" x2="12" y2="22" />
+                <line x1="8" y1="22" x2="16" y2="22" />
+              </svg>
             </button>
-          );
-        })}
-      </div>}
-      {showEmptyResults && <div className="search-status">No matching trains found.</div>}
+            {query && (
+              <button className="clear" onClick={() => onQueryChange("")} aria-label="Clear search">
+                ×
+              </button>
+            )}
+          </div>
+          {searching && <div className="search-status">Searching live train directory…</div>}
+          {searchError && <div className="search-status">{searchError}</div>}
+          {results.length > 0 && (
+            <div className="results">
+              {results.map((t) => {
+                const route = formatRouteEndpoints(t.source, t.destination);
+                return (
+                  <button className="result" key={t.number} onClick={() => choose(t)}>
+                    <span className="train-mark">↗</span>
+                    <span>
+                      <b>{t.name}</b>
+                      <small>{route ? `${t.number} · ${route}` : t.number}</small>
+                    </span>
+                    <span className="arrow">→</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {showEmptyResults && <div className="search-status">No matching trains found.</div>}
+        </>
+      ) : (
+        <div className="pnr-panel">
+          <form className="pnr-form" onSubmit={submitPnr} noValidate>
+            <label htmlFor="pnr-input" className="pnr-label">
+              10-digit PNR
+            </label>
+            <div className="pnr-row">
+              <input
+                id="pnr-input"
+                ref={pnrInputRef}
+                inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={10}
+                value={pnrInput}
+                onChange={(event) => {
+                  setPnrInput(normalizePnrInput(event.target.value));
+                  setPnrError("");
+                }}
+                placeholder="Enter 10-digit PNR"
+                aria-label="10-digit PNR"
+              />
+              <button type="submit" className="pnr-submit" disabled={pnrLoading}>
+                {pnrLoading ? "Checking…" : "Check Status"}
+              </button>
+            </div>
+          </form>
+          {pnrLoading && (
+            <div className="search-status" role="status">
+              Checking reservation status…
+            </div>
+          )}
+          {pnrError && (
+            <div className="search-status pnr-error" role="alert">
+              {pnrError}
+            </div>
+          )}
+          {pnrResult && (
+            <div className="pnr-result" aria-live="polite">
+              <div className="pnr-result-head">
+                <div>
+                  <small>TRAIN</small>
+                  <strong>
+                    {[pnrResult.train?.number, pnrResult.train?.name].filter(Boolean).join(" · ") ||
+                      "Train details unavailable"}
+                  </strong>
+                </div>
+                <div>
+                  <small>JOURNEY</small>
+                  <strong>
+                    {[pnrResult.journey?.date, pnrResult.journey?.class, pnrResult.journey?.quota]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
+                  </strong>
+                </div>
+              </div>
+              <div className="pnr-route">
+                {[
+                  pnrResult.train?.boardingPoint?.name || pnrResult.train?.source?.name,
+                  pnrResult.train?.reservationUpto?.name || pnrResult.train?.destination?.name,
+                ]
+                  .filter(Boolean)
+                  .join(" → ") || "Route details unavailable"}
+              </div>
+              <div className="pnr-chart">
+                <small>CHART</small>
+                <strong>{pnrResult.charting?.status || "Chart status unavailable"}</strong>
+              </div>
+              <ul className="pnr-passengers">
+                {(pnrResult.passengers || []).map((passenger) => (
+                  <li key={passenger.passengerNumber}>
+                    <div className="pnr-passenger-top">
+                      <strong>Passenger {passenger.passengerNumber}</strong>
+                      <span>{passenger.currentStatus || "Status unavailable"}</span>
+                    </div>
+                    <div className="pnr-passenger-meta">
+                      Booking: {passenger.bookingStatus || "—"}
+                      {passenger.coach ? ` · Coach ${passenger.coach}` : ""}
+                      {passenger.berthNumber
+                        ? ` · Berth ${passenger.berthNumber}${
+                            passenger.berthCode ? ` (${passenger.berthCode})` : ""
+                          }`
+                        : ""}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {pnrResult.checkedAt && (
+                <div className="pnr-checked">
+                  Checked {new Date(pnrResult.checkedAt).toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                  })}
+                </div>
+              )}
+              {pnrSourceNote && <p className="pnr-source-note">{pnrSourceNote}</p>}
+              <a
+                className="pnr-confirm-link"
+                href={OFFICIAL_PNR_CONFIRMATION_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Optional official confirmation on Indian Railways
+              </a>
+            </div>
+          )}
+        </div>
+      )}
     </main>
     <BlogPreview />
     <ReviewsSection />

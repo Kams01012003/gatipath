@@ -10,6 +10,8 @@ const INTERNAL_LINK_RULES = {
   ],
   "/blog/pnr-status-cnf-rac-wl-guide": [
     { phrase: "live train running status guide", href: "/blog/how-to-check-live-train-running-status" },
+    { phrase: "PNR Status", href: "/" },
+    { phrase: "RailDisha homepage", href: "/" },
     { phrase: "RailDisha’s train tracker", href: "/" },
     { phrase: "RailDisha's train tracker", href: "/" },
   ],
