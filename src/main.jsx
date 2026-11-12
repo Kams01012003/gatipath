@@ -380,8 +380,14 @@ export function App() {
   return <div className="app">
     <header className="nav">
       <button type="button" className="brand" onClick={reset} aria-label="RailDisha home">
-        <span className="brand-wordmark">Rail<span>Disha</span></span>
-        <span className="brand-tagline" lang="hi">आपको मिलेगी सही दिशा</span>
+        <img
+          className="brand-logo"
+          src="/raildisha-logo.png"
+          alt=""
+          width="2172"
+          height="724"
+          decoding="async"
+        />
       </button>
       <div className="nav-pill">INDIAN RAILWAYS · LIVE JOURNEYS</div>
     </header>
