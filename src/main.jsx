@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { localApi } from "./localApi.js";
 import { ReviewsSection } from "./ReviewsSection.jsx";
+import { BlogPreview } from "./BlogPreview.jsx";
+import { BlogArticlePage, BlogIndexPage } from "./BlogPages.jsx";
+import { SiteNav } from "./SiteNav.jsx";
+import { applyDocumentMeta } from "./seo.js";
+import { getHomeMeta } from "./blogData.js";
 import {
   formatDelay,
   formatRouteEndpoints,
@@ -11,11 +17,14 @@ import {
 } from "./trainUtils.js";
 import "./styles.css";
 
+const PNR_ENQUIRY_URL =
+  "https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en3";
+
 function isAbortError(error) {
   return error?.name === "AbortError";
 }
 
-export function App() {
+export function HomePage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -38,6 +47,24 @@ export function App() {
   const searchTimerRef = useRef(null);
   const searchRequestRef = useRef(0);
   const [listening, setListening] = useState(false);
+  const searchInputRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    applyDocumentMeta(getHomeMeta());
+  }, []);
+
+  function focusTrainSearch(event) {
+    event?.preventDefault?.();
+    const input = searchInputRef.current || document.getElementById("train-search");
+    if (!input) return;
+    // Focus without changing the query so no provider search is fired.
+    input.focus({ preventScroll: true });
+    if (typeof input.scrollIntoView === "function") {
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
   const startVoiceSearch = () => {
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -378,33 +405,47 @@ export function App() {
     completedSearchQuery === trimmedQuery;
 
   return <div className="app">
-    <header className="nav">
-      <button type="button" className="brand" onClick={reset} aria-label="RailDisha home">
-        <img
-          className="brand-logo"
-          src="/raildisha-logo.png"
-          alt=""
-          width="2172"
-          height="724"
-          decoding="async"
-        />
-      </button>
-      <div className="nav-links">
-        <a className="nav-link" href="#reviews">Reviews</a>
-        <div className="nav-pill">INDIAN RAILWAYS · LIVE JOURNEYS</div>
-      </div>
-    </header>
+    <SiteNav
+      onHomeClick={(event) => {
+        event.preventDefault();
+        reset();
+        navigate("/");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }}
+    />
 
     {!active ? <>
     <main className="hero">
       <div className="eyebrow">A clearer way to track Indian trains</div>
       <h1>Know where<br/><em>your train is.</em></h1>
       <p className="sub">Search by train name or number. Choose the journey. Follow every station.</p>
+
+      <div className="status-actions" role="group" aria-label="Quick status checks">
+        <a
+          className="status-action status-action-pnr"
+          href={PNR_ENQUIRY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className="status-action-label">PNR Status</span>
+          <span className="status-action-note">Opens Indian Railways</span>
+        </a>
+        <button
+          type="button"
+          className="status-action status-action-train"
+          onClick={focusTrainSearch}
+        >
+          <span className="status-action-label">Train Status</span>
+          <span className="status-action-note">Use search below</span>
+        </button>
+      </div>
+
       <div className="search-wrap">
         <div className="search-icon" aria-hidden="true">⌕</div>
         <label htmlFor="train-search" className="sr-only">Search trains by number or name</label>
         <input
           id="train-search"
+          ref={searchInputRef}
           autoFocus
           value={query}
           onChange={e => onQueryChange(e.target.value)}
@@ -455,6 +496,7 @@ export function App() {
       </div>}
       {showEmptyResults && <div className="search-status">No matching trains found.</div>}
     </main>
+    <BlogPreview />
     <ReviewsSection />
     </> :
     <main id="journey" className="journey-page">
@@ -605,7 +647,19 @@ export function App() {
   </div>;
 }
 
+export function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/blog" element={<BlogIndexPage />} />
+        <Route path="/blog/:slug" element={<BlogArticlePage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 const rootElement = document.getElementById("root");
 if (rootElement) {
-  createRoot(rootElement).render(<App/>);
+  createRoot(rootElement).render(<App />);
 }
