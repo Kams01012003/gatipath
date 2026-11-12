@@ -121,7 +121,7 @@ export function getHomeMeta() {
   return {
     title: "RailDisha — Know where your train is.",
     description:
-      "Search Indian trains by name or number and follow live journey information station by station.",
+      "RailDisha helps you follow Indian train journeys station by station. Live lookups are paused — try the sample Demo meanwhile.",
     canonical: `${SITE}/`,
     path: "/",
   };

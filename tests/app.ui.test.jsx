@@ -2,8 +2,17 @@ import React from "react";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { App } from "../src/main.jsx";
+import { MemoryRouter } from "react-router-dom";
+import { LiveHomePage } from "../src/LiveHomePage.jsx";
 import { jsonResponse } from "./helpers/offlineFetch.js";
+
+function renderLive() {
+  return render(
+    <MemoryRouter>
+      <LiveHomePage />
+    </MemoryRouter>
+  );
+}
 
 const searchHits = [
   {
@@ -95,6 +104,9 @@ function liveTrainPayload(overrides = {}) {
 
 function setApiHandlers(handlers = {}) {
   localApiState.handler = async (url) => {
+    if (String(url).startsWith("/api/capabilities")) {
+      return jsonResponse({ liveEnabled: true });
+    }
     if (String(url).startsWith("/api/reviews")) {
       if (handlers.reviews) return handlers.reviews(url);
       return jsonResponse({
@@ -148,7 +160,7 @@ async function typeQuery(text) {
 
 describe("search accessibility and empty-result timing", () => {
   it("exposes the search textbox by accessible name", () => {
-    render(<App />);
+    renderLive();
     expect(
       screen.getByRole("textbox", { name: /search trains by number or name/i })
     ).toBeInTheDocument();
@@ -159,7 +171,7 @@ describe("search accessibility and empty-result timing", () => {
 
   it("does not show empty results for a two-character query", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    render(<App />);
+    renderLive();
     await typeQuery("ra");
 
     await act(async () => {
@@ -180,7 +192,7 @@ describe("search accessibility and empty-result timing", () => {
             resolve(jsonResponse({ success: true, data: [] }));
         }),
     });
-    render(<App />);
+    renderLive();
     await typeQuery("zzz");
 
     expect(screen.queryByText(/no matching trains found/i)).not.toBeInTheDocument();
@@ -219,7 +231,7 @@ describe("search accessibility and empty-result timing", () => {
       },
     });
 
-    render(<App />);
+    renderLive();
     const input = screen.getByRole("textbox", {
       name: /search trains by number or name/i,
     });
@@ -256,7 +268,7 @@ describe("search accessibility and empty-result timing", () => {
 describe("journey UI fixes", () => {
   it("shows DAY 2 for overnight calendar crossings", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(
       screen.getByRole("textbox", { name: /search trains by number or name/i }),
@@ -305,7 +317,7 @@ describe("journey UI fixes", () => {
         }),
     });
 
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(
       screen.getByRole("textbox", { name: /search trains by number or name/i }),
@@ -329,7 +341,7 @@ describe("journey UI fixes", () => {
 
   it("makes Search again a native button that resets and clears the URL", async () => {
     window.history.pushState(null, "", "/?train=12951");
-    render(<App />);
+    renderLive();
     const user = userEvent.setup();
 
     expect(await screen.findByRole("heading", { name: /mumbai rajdhani/i })).toBeInTheDocument();
@@ -356,7 +368,7 @@ describe("journey UI fixes", () => {
       train: async () => jsonResponse(liveTrainPayload({ delayMinutes: 0 })),
     });
     window.history.pushState(null, "", "/?train=12951");
-    render(<App />);
+    renderLive();
     const user = userEvent.setup();
 
     expect(await screen.findByText(/on time/i)).toBeInTheDocument();
@@ -426,7 +438,7 @@ describe("journey UI fixes", () => {
         }),
     });
 
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(
       screen.getByRole("textbox", { name: /search trains by number or name/i }),
@@ -448,7 +460,7 @@ describe("journey UI fixes", () => {
         throw new Error("Network down");
       },
     });
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(
       screen.getByRole("textbox", { name: /search trains by number or name/i }),
@@ -473,7 +485,7 @@ describe("journey UI fixes", () => {
       }),
     });
     window.history.pushState(null, "", "/?train=12951");
-    render(<App />);
+    renderLive();
     await waitFor(() => {
       expect(screen.getByText(/unexpected token/i)).toBeInTheDocument();
     });
@@ -483,7 +495,7 @@ describe("journey UI fixes", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     delete window.SpeechRecognition;
     delete window.webkitSpeechRecognition;
-    render(<App />);
+    renderLive();
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /search by voice/i }));
     expect(alertSpy).toHaveBeenCalledWith(
@@ -500,7 +512,7 @@ describe("journey UI fixes", () => {
           resolveTrain = () => resolve(jsonResponse(liveTrainPayload()));
         }),
     });
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(
       screen.getByRole("textbox", { name: /search trains by number or name/i }),
@@ -545,7 +557,7 @@ describe("journey UI fixes", () => {
         ),
     });
 
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const input = screen.getByRole("textbox", {
       name: /search trains by number or name/i,
@@ -570,7 +582,7 @@ describe("journey UI fixes", () => {
 
   it("keeps journey scroll-margin clear of the sticky header", async () => {
     window.history.pushState(null, "", "/?train=12951");
-    render(<App />);
+    renderLive();
     expect(await screen.findByRole("button", { name: /search again/i })).toBeInTheDocument();
 
     const journey = document.getElementById("journey");
@@ -601,7 +613,7 @@ describe("journey UI fixes", () => {
           ],
         }),
     });
-    render(<App />);
+    renderLive();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(
       screen.getByRole("textbox", { name: /search trains by number or name/i }),

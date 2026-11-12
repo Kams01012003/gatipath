@@ -219,6 +219,7 @@ describe("regression matrix: mock fixtures and handlers", () => {
   it("train handler rejects malformed numbers before fetch", async () => {
     const { fetchMock } = installFailClosedFetch();
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
     const res = createRes();
     await trainHandler({ query: { number: "12-951" } }, res);
@@ -230,6 +231,7 @@ describe("regression matrix: mock fixtures and handlers", () => {
   it("search handler returns empty data for short queries without provider calls", async () => {
     const { fetchMock } = installFailClosedFetch();
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
     const res = createRes();
     await searchHandler({ query: { q: "a" } }, res);
@@ -243,6 +245,7 @@ describe("regression matrix: mock fixtures and handlers", () => {
       throw new Error("socket hang up");
     });
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
     const res = createRes();
     await trainHandler({ query: { number: "12951" } }, res);
@@ -255,6 +258,7 @@ describe("regression matrix: mock fixtures and handlers", () => {
       jsonResponse({ error: { message: "Train not found" } }, 404)
     );
     vi.stubEnv("GATIPATH_MOCK", "0");
+    vi.stubEnv("LIVE_LOOKUPS_ENABLED", "true");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key");
     const res = createRes();
     await trainHandler({ query: { number: "12951" } }, res);

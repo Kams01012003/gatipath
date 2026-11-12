@@ -27,13 +27,16 @@ export function SiteNav({ onHomeClick } = {}) {
         />
       </button>
       <div className="nav-links">
+        <Link className="nav-link nav-link-demo" to="/demo">
+          Try Demo
+        </Link>
         <Link className="nav-link" to="/blog">
           Blog
         </Link>
         <Link className="nav-link" to="/#reviews">
           Reviews
         </Link>
-        <div className="nav-pill">INDIAN RAILWAYS · LIVE JOURNEYS</div>
+        <div className="nav-pill">INDIAN RAILWAYS · TRAIN JOURNEYS</div>
       </div>
     </header>
   );

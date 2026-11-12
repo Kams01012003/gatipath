@@ -1,4 +1,5 @@
 import { isLocalMockEnabled, mockPnrResponse } from "./mockTrains.js";
+import { rejectIfLiveLookupsDisabled } from "./liveLookups.js";
 import {
   isExactTenDigitPnr,
   normalizePnrInput,
@@ -198,6 +199,10 @@ export default async function handler(req, res) {
   if (isLocalMockEnabled()) {
     const mocked = mockPnrResponse(pnr);
     return res.status(mocked.status).json(mocked.body);
+  }
+
+  if (rejectIfLiveLookupsDisabled(res, setNoStore)) {
+    return;
   }
 
   const apiKey = process.env.RAILRADAR_API_KEY;

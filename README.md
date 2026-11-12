@@ -4,12 +4,28 @@ RailDisha is an Indian train journey tracker with live search, ratings, and a pu
 
 ## Live data
 
-The app uses RailRadar through Vercel serverless functions. Keep `RAILRADAR_API_KEY` in Vercel Environment Variables; never put the key in frontend code.
+The app can use RailRadar through Vercel serverless functions. Keep `RAILRADAR_API_KEY` in Vercel Environment Variables; never put the key in frontend code.
 
-- `/api/search?q=Himalayan%20Queen` searches the RailRadar train directory.
-- `/api/train/14095` retrieves live status for a train number.
+**Live lookups are paused by default** so production does not spend provider quota. `/api/search`, `/api/train/[number]`, and `/api/pnr` return `503` with `code: "live_unavailable"` and `Cache-Control: no-store` until explicitly re-enabled. Ratings (`/api/reviews*`) are unchanged.
 
-If live data is unavailable, the app reports the error instead of showing fake live status.
+### Re-enable live lookups later (no UI rewrite)
+
+The full live search/PNR product remains in `src/LiveHomePage.jsx`. While paused, `HomePage` renders `PausedHomePage` and `/demo` serves sample fixtures.
+
+1. Confirm provider quota/plan is ready (keep existing `RAILRADAR_API_KEY`).
+2. In Vercel project env (Production), set **server-only** `LIVE_LOOKUPS_ENABLED=true` (never a `VITE_` / public flag).
+3. Redeploy.
+
+That single flag both unlocks `/api/search`, `/api/train/[number]`, `/api/pnr` and makes `GET /api/capabilities` return `{ "liveEnabled": true }`, so the homepage mounts `LiveHomePage` again. `/demo` can stay for sample exploration.
+
+Do **not** use `GATIPATH_MOCK` / `VITE_GATIPATH_MOCK` for production demo data. Those remain development-only.
+
+### Demo mode (sample data)
+
+Public demo: https://raildisha.com/demo — browser fixtures only (no `/api/search`, `/api/train*`, `/api/pnr`, or provider calls). Clearly labelled `DEMO · SAMPLE DATA`. Page is `noindex` and omitted from `sitemap.xml`.
+
+Sample train numbers: `19001` (on time), `19002` (delayed).  
+Sample PNRs: `1000000001` (CNF), `1000000002` (RAC), `1000000003` (WL), `1000000004` (mixed).
 
 ## Brand assets
 
@@ -26,7 +42,7 @@ Development-only mock mode uses the existing `GATIPATH_MOCK` / `VITE_GATIPATH_MO
 
 Published guides live under `/blog` with prerendered HTML for crawlable titles, descriptions and canonical URLs on `https://raildisha.com`. Source content is in `src/blog-articles.json`. `npm run build` runs `scripts/prerender-blog.mjs` to emit static blog pages plus `sitemap.xml` / `robots.txt`.
 
-Homepage quick actions: **Train Status** focuses the existing search (no provider call); **PNR Status** switches to an inline 10-digit PNR check via same-origin `POST /api/pnr` (RailRadar server-side key, no-store).
+While live lookups are paused, homepage **Train Status** / **PNR Status** link to `/demo`. With `LIVE_LOOKUPS_ENABLED=true`, they again drive the live search and inline PNR flows in `LiveHomePage`.
 
 ## Hosting
 
