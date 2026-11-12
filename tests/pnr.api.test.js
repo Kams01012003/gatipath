@@ -76,10 +76,14 @@ describe("PNR API", () => {
     expect(ok.body.success).toBe(true);
     expect(ok.body.data.train.number).toBe("12952");
     expect(ok.body.data.passengers[0].currentStatus).toBe("CNF");
+    expect(ok.headers["Cache-Control"]).toMatch(/no-store/i);
+    expect(JSON.stringify(ok.body)).not.toMatch(/RAILRADAR|Bearer|api[_-]?key/i);
+    expect(ok.body.data.journey.bookingFare).toBeUndefined();
 
     const missing = mockRes();
     await handler({ method: "POST", headers: {}, body: { pnr: "0000000000" } }, missing);
     expect(missing.statusCode).toBe(404);
+    expect(missing.headers["Cache-Control"]).toMatch(/no-store/i);
 
     const quota = mockRes();
     await handler({ method: "POST", headers: {}, body: { pnr: "9999999999" } }, quota);

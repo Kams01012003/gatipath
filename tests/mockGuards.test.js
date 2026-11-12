@@ -43,6 +43,28 @@ describe("mock fail-closed behavior", () => {
     // Path regex only matches digits; malformed falls through to 404 mock miss.
     expect([400, 404]).toContain(response.status);
   });
+
+  it("serves offline PNR fixtures without contacting providers", async () => {
+    const ok = await mockLocalRequest("/api/pnr", {
+      method: "POST",
+      body: JSON.stringify({ pnr: "1234567890" }),
+    });
+    expect(ok.ok).toBe(true);
+    const okBody = await ok.json();
+    expect(okBody.data.passengers[0].currentStatus).toBe("CNF");
+
+    const missing = await mockLocalRequest("/api/pnr", {
+      method: "POST",
+      body: JSON.stringify({ pnr: "0000000000" }),
+    });
+    expect(missing.status).toBe(404);
+
+    const quota = await mockLocalRequest("/api/pnr", {
+      method: "POST",
+      body: JSON.stringify({ pnr: "9999999999" }),
+    });
+    expect(quota.status).toBe(429);
+  });
 });
 
 describe("environment mock switches", () => {
