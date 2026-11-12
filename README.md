@@ -1,6 +1,6 @@
-# Gatipath
+# RailDisha
 
-Gatipath is a one-page Indian train journey tracker.
+RailDisha is a one-page Indian train journey tracker. The public website domain is https://raildisha.com.
 
 ## Live data
 
@@ -10,3 +10,7 @@ The app uses RailRadar through Vercel serverless functions. Keep `RAILRADAR_API_
 - `/api/train/14095` retrieves live status for a train number.
 
 If live data is unavailable, the app reports the error instead of showing fake live status.
+
+## Local development mocks
+
+Development-only mock mode uses the existing `GATIPATH_MOCK` / `VITE_GATIPATH_MOCK` environment variable names. Those identifiers are intentionally left unchanged so local and hosted mock wiring keeps working.
