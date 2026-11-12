@@ -43,15 +43,10 @@ describe("blog and homepage status actions UI", () => {
       screen.getByRole("link", { name: /how to check live train running status/i })
     ).toBeInTheDocument();
 
-    const pnr = screen.getByRole("link", {
-      name: /pnr status\s*opens indian railways/i,
+    const pnr = screen.getByRole("button", {
+      name: /pnr status\s*check on raildisha/i,
     });
-    expect(pnr).toHaveAttribute(
-      "href",
-      "https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en3"
-    );
-    expect(pnr).toHaveAttribute("target", "_blank");
-    expect(pnr).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(pnr).not.toHaveAttribute("href");
 
     const trainStatus = screen.getByRole("button", {
       name: /train status\s*use search below/i,
@@ -68,15 +63,20 @@ describe("blog and homepage status actions UI", () => {
       </MemoryRouter>
     );
     const user = userEvent.setup();
-    const input = screen.getByRole("textbox", {
-      name: /search trains by number or name/i,
-    });
+    await user.click(screen.getByRole("button", { name: /pnr status/i }));
+    expect(screen.getByLabelText(/10-digit pnr/i)).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: /train status\s*use search below/i })
     );
+    const input = screen.getByRole("textbox", {
+      name: /search trains by number or name/i,
+    });
     expect(document.activeElement).toBe(input);
     expect(
       localApi.mock.calls.some(([url]) => String(url).includes("/api/search"))
+    ).toBe(false);
+    expect(
+      localApi.mock.calls.some(([url]) => String(url).includes("/api/pnr"))
     ).toBe(false);
   });
 

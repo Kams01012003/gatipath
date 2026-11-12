@@ -26,7 +26,7 @@ Development-only mock mode uses the existing `GATIPATH_MOCK` / `VITE_GATIPATH_MO
 
 Published guides live under `/blog` with prerendered HTML for crawlable titles, descriptions and canonical URLs on `https://raildisha.com`. Source content is in `src/blog-articles.json`. `npm run build` runs `scripts/prerender-blog.mjs` to emit static blog pages plus `sitemap.xml` / `robots.txt`.
 
-Homepage quick actions: **Train Status** focuses the existing search (no provider call); **PNR Status** opens the official Indian Railways PNR enquiry in a new tab.
+Homepage quick actions: **Train Status** focuses the existing search (no provider call); **PNR Status** switches to an inline 10-digit PNR check via same-origin `POST /api/pnr` (RailRadar server-side key, no-store).
 
 ## Hosting
 
