@@ -39,8 +39,7 @@ describe("reviews UI ready-to-connect behavior", () => {
           success: true,
           storageConfigured: false,
           submissionEnabled: false,
-          message:
-            "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+          message: "Reviews are temporarily unavailable. Please try again later.",
           average: null,
           count: 0,
           reviews: [],
@@ -55,9 +54,9 @@ describe("reviews UI ready-to-connect behavior", () => {
     expect(
       await screen.findByRole("heading", { name: /ratings & reviews/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/no published reviews yet/i)).toBeInTheDocument();
+    expect(screen.getByText("No reviews yet.")).toBeInTheDocument();
     expect(
-      screen.getByText(/review storage is not connected yet/i)
+      screen.getByText("Reviews are temporarily unavailable. Please try again later.")
     ).toBeInTheDocument();
 
     const submit = screen.getByRole("button", { name: /submit review/i });

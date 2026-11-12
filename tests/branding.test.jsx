@@ -15,7 +15,7 @@ vi.mock("../src/localApi.js", () => ({
           success: true,
           storageConfigured: false,
           submissionEnabled: false,
-          message: "Review storage is not connected yet.",
+          message: "Reviews are temporarily unavailable. Please try again later.",
           average: null,
           count: 0,
           reviews: [],

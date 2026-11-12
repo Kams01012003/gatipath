@@ -81,8 +81,7 @@ export function getStorageCapability(env = process.env) {
     storageConfigured: false,
     submissionEnabled: false,
     backend: "none",
-    message:
-      "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+    message: "Reviews are temporarily unavailable. Please try again later.",
   };
 }
 
@@ -351,7 +350,7 @@ export async function submitReview(
     }
   } catch (storageError) {
     const error = new Error(
-      "Review storage is temporarily unavailable. Your review was not saved."
+      "Reviews are temporarily unavailable. Please try again later."
     );
     error.status = 503;
     error.code = "storage_failure";
@@ -362,8 +361,7 @@ export async function submitReview(
   return {
     id: record.id,
     status: "pending",
-    message:
-      "Thanks. Your review was received and is awaiting moderation before it appears publicly.",
+    message: "Thanks. Your review was received.",
   };
 }
 

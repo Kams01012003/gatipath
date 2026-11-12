@@ -61,7 +61,9 @@ export function ReviewsSection() {
         if (cancelled) return;
         setStorageConfigured(false);
         setSubmissionEnabled(false);
-        setStatusMessage("Unable to load reviews right now.");
+        setStatusMessage(
+          "Reviews are temporarily unavailable. Please try again later."
+        );
         setAverage(null);
         setCount(0);
         setReviews([]);
@@ -82,7 +84,7 @@ export function ReviewsSection() {
     if (!submissionEnabled) {
       setFormError(
         statusMessage ||
-          "Review storage is not connected yet. Submissions are disabled."
+          "Reviews are temporarily unavailable. Please try again later."
       );
       return;
     }
@@ -116,8 +118,7 @@ export function ReviewsSection() {
         throw new Error(body.error || "Unable to submit review.");
       }
       setFormSuccess(
-        body.message ||
-          "Thanks. Your review was received and is awaiting moderation before it appears publicly."
+        body.message || "Thanks. Your review was received."
       );
       setRating(0);
       setName("");
@@ -139,7 +140,7 @@ export function ReviewsSection() {
           <span className="eyebrow">TRAVELER FEEDBACK</span>
           <h2 id={`${formId}-heading`}>Ratings &amp; reviews</h2>
           <p className="reviews-lead">
-            Share how RailDisha helped your journey. Published reviews appear only after moderation.
+            Share how RailDisha helped your journey.
           </p>
         </div>
 
@@ -149,10 +150,7 @@ export function ReviewsSection() {
           <>
             {empty ? (
               <div className="reviews-empty" role="status">
-                No published reviews yet.
-                {average == null && count === 0
-                  ? " Be the first to leave feedback once storage is connected."
-                  : ""}
+                No reviews yet.
               </div>
             ) : (
               <div className="reviews-summary" aria-live="polite">
@@ -185,7 +183,7 @@ export function ReviewsSection() {
           {!submissionEnabled && (
             <div className="reviews-disabled" role="status">
               {statusMessage ||
-                "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked."}
+                "Reviews are temporarily unavailable. Please try again later."}
             </div>
           )}
 

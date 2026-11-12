@@ -40,7 +40,9 @@ describe("reviews API handlers", () => {
     expect(res.body.storageConfigured).toBe(false);
     expect(res.body.submissionEnabled).toBe(false);
     expect(res.body.reviews).toEqual([]);
-    expect(res.body.message).toMatch(/not connected/i);
+    expect(res.body.message).toBe(
+      "Reviews are temporarily unavailable. Please try again later."
+    );
   });
 
   it("POST fails closed when storage is not connected", async () => {

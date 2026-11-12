@@ -165,8 +165,7 @@ function mockReviewsResponse(url, options = {}) {
       status: 503,
       json: async () => ({
         success: false,
-        error:
-          "Moderation requires Blob storage and REVIEWS_MODERATION_TOKEN. Local mock mode does not persist reviews.",
+        error: "Reviews are temporarily unavailable. Please try again later.",
       }),
     };
   }
@@ -179,8 +178,7 @@ function mockReviewsResponse(url, options = {}) {
         success: true,
         storageConfigured: false,
         submissionEnabled: false,
-        message:
-          "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+        message: "Reviews are temporarily unavailable. Please try again later.",
         average: null,
         count: 0,
         reviews: [],
@@ -195,8 +193,7 @@ function mockReviewsResponse(url, options = {}) {
       json: async () => ({
         success: false,
         code: "storage_unconfigured",
-        error:
-          "Review storage is not connected yet. Submissions are disabled until a Vercel Blob store is linked to this project.",
+        error: "Reviews are temporarily unavailable. Please try again later.",
       }),
     };
   }

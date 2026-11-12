@@ -50,7 +50,7 @@ export default async function handler(req, res) {
         success: false,
         storageConfigured: getStorageCapability().storageConfigured,
         submissionEnabled: false,
-        error: "Unable to load reviews right now.",
+        error: "Reviews are temporarily unavailable. Please try again later.",
         average: null,
         count: 0,
         reviews: [],
