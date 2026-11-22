@@ -35,6 +35,21 @@ const ALLOWED_UPSTREAM_CODES = new Set([
   "JOURNEY_UNAVAILABLE",
 ]);
 
+const ALLOWED_MITRA_CODES = new Set([
+  "api_key_required",
+  "api_key_invalid",
+  "api_key_inactive",
+  "api_key_disabled",
+  "api_key_revoked",
+  "endpoint_not_allowed",
+  "origin_not_allowed",
+  "ip_not_allowed",
+  "plan_required",
+  "quota_exceeded",
+  "rate_limit_exceeded",
+  "forbidden",
+]);
+
 const CLASS = {
   AUTH: "provider_auth",
   QUOTA: "provider_quota",
@@ -103,6 +118,10 @@ function logPnrFailure(diagnostic) {
     upstreamCode:
       typeof diagnostic.upstreamCode === "string" ? diagnostic.upstreamCode : null,
   };
+  if (diagnostic.provider === "api_mitra") {
+    safe.provider = diagnostic.provider;
+    safe.responseFormat = diagnostic.responseFormat;
+  }
   console.error(JSON.stringify(safe));
 }
 
@@ -284,12 +303,21 @@ export default async function handler(req, res) {
       body = null;
     }
 
-    const upstreamCode = allowlistedUpstreamCode(body);
+    const upstreamCode = mitraKey && ALLOWED_MITRA_CODES.has(body?.code)
+      ? body.code
+      : allowlistedUpstreamCode(body);
     const upstreamStatus = response.status;
+    const mitraDiagnostic = mitraKey ? {
+      provider: "api_mitra",
+      responseFormat: response.headers?.get("cf-mitigated") === "challenge"
+        ? "challenge"
+        : body === null ? "non_json" : "json",
+    } : {};
 
     if (!response.ok || (!mitraKey && !body?.success)) {
       const mapped = classifyUpstream(upstreamStatus, upstreamCode);
       return fail(res, mapped.httpStatus, mapped.error, {
+        ...mitraDiagnostic,
         class: mapped.class,
         upstreamStatus,
         upstreamCode,
@@ -303,6 +331,7 @@ export default async function handler(req, res) {
         503,
         "PNR status is temporarily unavailable. Please try again later.",
         {
+          ...mitraDiagnostic,
           class: CLASS.INVALID_RESPONSE,
           upstreamStatus,
           upstreamCode,

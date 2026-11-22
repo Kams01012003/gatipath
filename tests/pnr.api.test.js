@@ -311,6 +311,25 @@ describe("PNR API live-path classification (mocked fetch only)", () => {
     expect(res.body.data.passengers[0]).not.toHaveProperty("name");
   });
 
+  it("keeps a safe diagnostic when API Mitra denies access", async () => {
+    vi.stubEnv("API_MITRA_API_KEY", "mitra-test-key");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(403, {
+      code: "endpoint_not_allowed",
+      error: "Provider detail",
+    })));
+    const res = mockRes();
+    await handler(reqFor(), res);
+    expect(res.statusCode).toBe(503);
+    expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({
+      provider: "api_mitra",
+      responseFormat: "json",
+      upstreamStatus: 403,
+      upstreamCode: "endpoint_not_allowed",
+    });
+    expect(log.mock.calls[0][0]).not.toContain("Provider detail");
+  });
+
   it("rejects an API Mitra response for a different booking", async () => {
     vi.stubEnv("API_MITRA_API_KEY", "mitra-test-key");
     vi.spyOn(console, "error").mockImplementation(() => {});
