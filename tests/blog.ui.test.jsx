@@ -36,7 +36,7 @@ beforeEach(() => {
 });
 
 describe("blog and homepage status actions UI", () => {
-  it("exposes Blog nav, Try Demo, homepage preview cards and demo status links", async () => {
+  it("exposes Blog nav, Try Demo, homepage preview cards and status actions", async () => {
     render(<App />);
     expect(await screen.findByRole("link", { name: /^blog$/i })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /try demo/i }).length).toBeGreaterThan(0);
@@ -48,15 +48,15 @@ describe("blog and homepage status actions UI", () => {
     ).toBeInTheDocument();
 
     expect(await screen.findByText(/live lookups are paused/i)).toBeInTheDocument();
-    const pnr = screen.getByRole("link", { name: /pnr status\s*open sample pnr demo/i });
-    expect(pnr).toHaveAttribute("href", "/demo?mode=pnr");
+    const pnr = screen.getByRole("button", { name: /pnr status/i });
+    expect(pnr).toHaveAttribute("aria-expanded", "false");
     const trainStatus = screen.getByRole("link", {
       name: /train status\s*open sample train demo/i,
     });
     expect(trainStatus).toHaveAttribute("href", "/demo");
   });
 
-  it("does not call search or pnr APIs from the paused homepage", async () => {
+  it("checks a sample PNR on the homepage without calling a lookup API", async () => {
     const { localApi } = await import("../src/localApi.js");
     localApi.mockClear();
     render(
@@ -66,10 +66,16 @@ describe("blog and homepage status actions UI", () => {
     );
     expect(await screen.findByText(/live lookups are paused/i)).toBeInTheDocument();
     const user = userEvent.setup();
-    const cta = screen.getAllByRole("link", { name: /try demo/i }).find((el) =>
-      el.classList.contains("demo-cta-button")
-    );
-    await user.click(cta);
+    const pnrButton = screen.getByRole("button", { name: /pnr status/i });
+    await user.click(pnrButton);
+    expect(pnrButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: /check with indian railways/i })).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: /sample 10-digit pnr/i }), "1000000001");
+    await user.click(screen.getByRole("button", { name: /show sample/i }));
+    expect(screen.getByText("19001 · Sample Himalayan Express")).toBeVisible();
+    expect(screen.getByRole("heading", { name: /know where\s*your train is/i })).toBeVisible();
+    await user.click(pnrButton);
+    expect(screen.queryByRole("region", { name: /sample pnr check/i })).not.toBeInTheDocument();
     expect(
       localApi.mock.calls.some(([url]) => String(url).includes("/api/search"))
     ).toBe(false);

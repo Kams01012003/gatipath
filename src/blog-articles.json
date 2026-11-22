@@ -86,7 +86,7 @@
       {
         "heading": "Where to check PNR status",
         "paragraphs": [
-          "On RailDisha, choose PNR Status on the homepage, enter the 10-digit PNR from your ticket, and select Check Status to review the reservation details shown there. Keep the ticket available so you can compare the result with your journey. For an optional confirmation, you can also use the Passenger Current Status Enquiry on the official Indian Railways website. Use Train Status on RailDisha when you need running information for the train itself."
+          "Choose PNR Status on the RailDisha homepage. When live lookups are available, enter the 10-digit PNR from your ticket and select Check Status. When live lookups are paused, try a sample PNR directly on the homepage. For your actual reservation during the pause, use the Passenger Current Status Enquiry on the official Indian Railways website."
         ]
       },
       {
@@ -124,7 +124,7 @@
       {
         "heading": "Use two checks for a clearer journey plan",
         "paragraphs": [
-          "First confirm your reservation with PNR Status on the RailDisha homepage. Then check your train’s running information before leaving for the station. Read our live train running status guide for help interpreting delays and expected arrival times."
+          "Confirm your reservation and check your train’s running information before leaving for the station. Read our live train running status guide for help interpreting delays and expected arrival times."
         ]
       }
     ],

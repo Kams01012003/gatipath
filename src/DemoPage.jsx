@@ -8,20 +8,14 @@ import {
   mapLiveTrain,
   trainHeading,
 } from "./trainUtils.js";
-import {
-  isExactTenDigitPnr,
-  normalizePnrInput,
-  OFFICIAL_PNR_CONFIRMATION_URL,
-} from "./pnrUtils.js";
+import { DemoPnrPanel } from "./DemoPnrPanel.jsx";
 import {
   DEMO_BADGE,
   DEMO_NOTICE,
-  DEMO_PNR_SCENARIOS,
   DEMO_SAMPLE_DATE_LABEL,
   DEMO_TRAIN_SCENARIOS,
   DEMO_UNKNOWN_INPUT_MESSAGE,
   getDemoMeta,
-  getDemoPnrResult,
   getDemoTrainPayload,
   listDemoTrainDirectory,
   parseDemoMode,
@@ -50,9 +44,6 @@ export function DemoPage() {
   const [trainError, setTrainError] = useState("");
   const [active, setActive] = useState(null);
   const [boarding, setBoarding] = useState("");
-  const [pnrInput, setPnrInput] = useState("");
-  const [pnrError, setPnrError] = useState("");
-  const [pnrResult, setPnrResult] = useState(null);
 
   useEffect(() => {
     applyDocumentMeta(getDemoMeta());
@@ -70,7 +61,6 @@ export function DemoPage() {
       navigate("/demo?mode=pnr", { replace: true });
       return;
     }
-    setPnrError("");
     navigate("/demo", { replace: true });
   }
 
@@ -112,31 +102,6 @@ export function DemoPage() {
       })
     );
     setBoarding("");
-  }
-
-  function selectPnrScenario(scenario) {
-    setPnrInput(scenario.pnr);
-    setPnrError("");
-    setPnrResult(getDemoPnrResult(scenario.pnr));
-  }
-
-  function submitPnr(event) {
-    event.preventDefault();
-    const pnr = normalizePnrInput(pnrInput);
-    setPnrInput(pnr);
-    if (!isExactTenDigitPnr(pnr)) {
-      setPnrResult(null);
-      setPnrError(DEMO_UNKNOWN_INPUT_MESSAGE);
-      return;
-    }
-    const result = getDemoPnrResult(pnr);
-    if (!result) {
-      setPnrResult(null);
-      setPnrError(DEMO_UNKNOWN_INPUT_MESSAGE);
-      return;
-    }
-    setPnrError("");
-    setPnrResult(result);
   }
 
   const statusText = useMemo(() => {
@@ -264,120 +229,8 @@ export function DemoPage() {
               </div>
             )}
           </div>
-        ) : (
-          <div className="demo-panel">
-            <div className="demo-chips" role="group" aria-label="Sample PNR scenarios">
-              {DEMO_PNR_SCENARIOS.map((scenario) => (
-                <button
-                  key={scenario.id}
-                  type="button"
-                  className="demo-chip"
-                  onClick={() => selectPnrScenario(scenario)}
-                >
-                  <strong>{scenario.chipLabel}</strong>
-                  <span>{scenario.hint}</span>
-                </button>
-              ))}
-            </div>
-
-            <form className="pnr-form" onSubmit={submitPnr} noValidate>
-              <label htmlFor="demo-pnr-input" className="pnr-label">
-                Sample 10-digit PNR
-              </label>
-              <div className="pnr-row">
-                <input
-                  id="demo-pnr-input"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  spellCheck={false}
-                  maxLength={10}
-                  value={pnrInput}
-                  onChange={(event) => {
-                    setPnrInput(normalizePnrInput(event.target.value));
-                    setPnrError("");
-                  }}
-                  placeholder="e.g. 1000000001"
-                  aria-label="Sample 10-digit PNR"
-                />
-                <button type="submit" className="pnr-submit">
-                  Show sample
-                </button>
-              </div>
-            </form>
-
-            {pnrError && (
-              <div className="search-status pnr-error" role="alert">
-                {pnrError}
-              </div>
-            )}
-
-            {pnrResult && (
-              <div className="pnr-result demo-pnr-result" aria-live="polite">
-                <DemoBadge />
-                <div className="pnr-result-head">
-                  <div>
-                    <small>TRAIN (SAMPLE)</small>
-                    <strong>
-                      {[pnrResult.train?.number, pnrResult.train?.name]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </strong>
-                  </div>
-                  <div>
-                    <small>JOURNEY (SAMPLE)</small>
-                    <strong>
-                      {[pnrResult.journey?.date, pnrResult.journey?.class, pnrResult.journey?.quota]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </strong>
-                  </div>
-                </div>
-                <div className="pnr-route">
-                  {[
-                    pnrResult.train?.boardingPoint?.name || pnrResult.train?.source?.name,
-                    pnrResult.train?.reservationUpto?.name || pnrResult.train?.destination?.name,
-                  ]
-                    .filter(Boolean)
-                    .join(" → ")}
-                </div>
-                <div className="pnr-chart">
-                  <small>CHART (SAMPLE)</small>
-                  <strong>{pnrResult.charting?.status}</strong>
-                </div>
-                <ul className="pnr-passengers">
-                  {pnrResult.passengers.map((passenger) => (
-                    <li key={passenger.passengerNumber}>
-                      <div className="pnr-passenger-top">
-                        <strong>Passenger {passenger.passengerNumber}</strong>
-                        <span>{passenger.currentStatus}</span>
-                      </div>
-                      <div className="pnr-passenger-meta">
-                        Booking: {passenger.bookingStatus || "—"}
-                        {passenger.coach ? ` · Coach ${passenger.coach}` : ""}
-                        {passenger.berthNumber
-                          ? ` · Berth ${passenger.berthNumber}${
-                              passenger.berthCode ? ` (${passenger.berthCode})` : ""
-                            }`
-                          : ""}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <p className="pnr-source-note">
-                  Sample reservation only. Not a live Indian Railways record.
-                </p>
-                <a
-                  className="pnr-confirm-link"
-                  href={OFFICIAL_PNR_CONFIRMATION_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Optional official confirmation on Indian Railways
-                </a>
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
+        <DemoPnrPanel hidden={mode !== "pnr"} />
 
         <p className="demo-home-link">
           <Link to="/">Back to RailDisha home</Link>

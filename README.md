@@ -42,7 +42,7 @@ Development-only mock mode uses the existing `GATIPATH_MOCK` / `VITE_GATIPATH_MO
 
 Published guides live under `/blog` with prerendered HTML for crawlable titles, descriptions and canonical URLs on `https://raildisha.com`. Source content is in `src/blog-articles.json`. `npm run build` runs `scripts/prerender-blog.mjs` to emit static blog pages plus `sitemap.xml` / `robots.txt`.
 
-While live lookups are paused, homepage **Train Status** / **PNR Status** link to `/demo`. With `LIVE_LOOKUPS_ENABLED=true`, they again drive the live search and inline PNR flows in `LiveHomePage`.
+While live lookups are paused, homepage **PNR Status** opens a sample check inline and **Train Status** links to `/demo`. With `LIVE_LOOKUPS_ENABLED=true`, they drive the live search and inline PNR flows in `LiveHomePage`.
 
 ## Hosting
 
