@@ -633,9 +633,19 @@ export function LiveHomePage() {
             </div>
           )}
           {pnrError && (
-            <div className="search-status pnr-error" role="alert">
-              {pnrError}
-            </div>
+            <>
+              <div className="search-status pnr-error" role="alert">
+                {pnrError}
+              </div>
+              <a
+                className="pnr-confirm-link"
+                href={OFFICIAL_PNR_CONFIRMATION_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Check PNR on Indian Railways
+              </a>
+            </>
           )}
           {pnrResult && (
             <div className="pnr-result" aria-live="polite">
