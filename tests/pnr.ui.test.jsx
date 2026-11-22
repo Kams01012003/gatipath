@@ -331,6 +331,10 @@ describe("preserved live inline PNR status UI", () => {
     expect(
       await screen.findByText(/PNR status is temporarily unavailable\. Please try again later\./i)
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /check pnr on indian railways/i })).toHaveAttribute(
+      "href",
+      "https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en3"
+    );
   });
 
   it("ignores stale responses after duplicate submit and mode switch cancellation", async () => {
