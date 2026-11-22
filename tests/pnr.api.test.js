@@ -162,6 +162,7 @@ describe("PNR API live-path classification (mocked fetch only)", () => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("RAILRADAR_API_KEY", "test-key-not-real");
+    vi.stubEnv("API_MITRA_API_KEY", "");
   });
 
   afterEach(() => {
@@ -273,6 +274,56 @@ describe("PNR API live-path classification (mocked fetch only)", () => {
     await handler(reqFor(), unavailable);
     expect(unavailable.body.code).toBe("provider_not_found");
     expect(unavailable.body.upstreamCode).toBe("API:DATA_NOT_AVAILABLE");
+  });
+
+  it("uses API Mitra when configured and returns its current reservation status", async () => {
+    vi.stubEnv("API_MITRA_API_KEY", "mitra-test-key");
+    const fetchMock = vi.fn(async () => jsonResponse(200, {
+      status: "ok",
+      pnr: SAMPLE_PNR,
+      train_number: "13185",
+      train_name: "Example Express",
+      travel_date: "05-08-2026",
+      from: { code: "ASN", name: "Asansol Junction" },
+      to: { code: "JYG", name: "Jaynagar" },
+      class: "3A",
+      chart_prepared: false,
+      passengers: [{ number: 1, booking_status: "WL", current_status: "CNF", name: "Private" }],
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = mockRes();
+    await handler(reqFor(), res);
+
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `https://api.apimitra.in/train/pnr?number=${SAMPLE_PNR}`,
+      expect.objectContaining({
+        headers: { "x-api-key": "mitra-test-key", Accept: "application/json" },
+        redirect: "error",
+      })
+    );
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toMatchObject({
+      train: { number: "13185", boardingPoint: { code: "ASN" }, reservationUpto: { code: "JYG" } },
+      journey: { date: "05-08-2026", class: "3A" },
+      charting: { isPrepared: false, status: "Chart Not Prepared" },
+      passengers: [{ passengerNumber: 1, bookingStatus: "WL", currentStatus: "CNF" }],
+    });
+    expect(res.body.data.passengers[0]).not.toHaveProperty("name");
+  });
+
+  it("rejects an API Mitra response for a different booking", async () => {
+    vi.stubEnv("API_MITRA_API_KEY", "mitra-test-key");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(200, {
+      status: "ok",
+      pnr: "9999999999",
+      passengers: [{ number: 1, current_status: "CNF" }],
+    })));
+    const res = mockRes();
+    await handler(reqFor(), res);
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toMatchObject({ success: false, code: "provider_invalid_response" });
+    expect(res.body).not.toHaveProperty("data");
   });
 
   it("classifies upstream 429 as provider_quota", async () => {

@@ -159,6 +159,47 @@ function classifyUpstream(status, upstreamCode) {
   };
 }
 
+function normalizeMitraReservation(body, requestedPnr) {
+  const passengers = body?.passengers;
+  if (
+    body?.status !== "ok" ||
+    String(body.pnr) !== requestedPnr ||
+    !Array.isArray(passengers) ||
+    !passengers.some((passenger) =>
+      typeof passenger?.current_status === "string" && passenger.current_status.trim()
+    )
+  ) {
+    return null;
+  }
+
+  const chartPrepared = body.chart_prepared;
+  const charting = typeof chartPrepared === "boolean"
+    ? { isPrepared: chartPrepared, status: chartPrepared ? "Chart Prepared" : "Chart Not Prepared" }
+    : null;
+
+  return {
+    data: {
+      pnrNumber: requestedPnr,
+      train: {
+        number: body.train_number,
+        name: body.train_name,
+        boardingPoint: body.from,
+        reservationUpto: body.to,
+      },
+      journey: {
+        date: body.travel_date,
+        class: body.class,
+      },
+      charting,
+      passengers: passengers.filter(Boolean).map((passenger) => ({
+        passengerNumber: passenger.number,
+        bookingStatus: passenger.booking_status,
+        currentStatus: passenger.current_status,
+      })),
+    },
+  };
+}
+
 export default async function handler(req, res) {
   setNoStore(res);
 
@@ -205,8 +246,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const apiKey = process.env.RAILRADAR_API_KEY;
-  if (!apiKey) {
+  const mitraKey = process.env.API_MITRA_API_KEY?.trim();
+  const railRadarKey = process.env.RAILRADAR_API_KEY;
+  if (!mitraKey && !railRadarKey) {
     return fail(
       res,
       503,
@@ -219,12 +261,19 @@ export default async function handler(req, res) {
   const timer = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const response = await fetch(`https://api.railradar.in/v1/pnr/${pnr}`, {
+    const upstreamUrl = mitraKey
+      ? `https://api.apimitra.in/train/pnr?number=${pnr}`
+      : `https://api.railradar.in/v1/pnr/${pnr}`;
+    const credentials = mitraKey
+      ? { "x-api-key": mitraKey }
+      : { Authorization: `Bearer ${railRadarKey}` };
+    const response = await fetch(upstreamUrl, {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        ...credentials,
         Accept: "application/json",
       },
+      redirect: "error",
       signal: controller.signal,
     });
 
@@ -238,7 +287,7 @@ export default async function handler(req, res) {
     const upstreamCode = allowlistedUpstreamCode(body);
     const upstreamStatus = response.status;
 
-    if (!response.ok || !body?.success) {
+    if (!response.ok || (!mitraKey && !body?.success)) {
       const mapped = classifyUpstream(upstreamStatus, upstreamCode);
       return fail(res, mapped.httpStatus, mapped.error, {
         class: mapped.class,
@@ -247,7 +296,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const sanitized = sanitizePnrPayload(body);
+    const sanitized = sanitizePnrPayload(mitraKey ? normalizeMitraReservation(body, pnr) : body);
     if (!sanitized) {
       return fail(
         res,
