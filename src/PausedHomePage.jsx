@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ReviewsSection } from "./ReviewsSection.jsx";
 import { BlogPreview } from "./BlogPreview.jsx";
 import { SiteNav } from "./SiteNav.jsx";
+import { DemoPnrPanel } from "./DemoPnrPanel.jsx";
 import { applyDocumentMeta } from "./seo.js";
 import { getHomeMeta } from "./blogData.js";
 
@@ -13,6 +14,7 @@ import { getHomeMeta } from "./blogData.js";
  */
 export function PausedHomePage() {
   const navigate = useNavigate();
+  const [showPnr, setShowPnr] = useState(false);
 
   useEffect(() => {
     applyDocumentMeta(getHomeMeta());
@@ -54,13 +56,16 @@ export function PausedHomePage() {
         </div>
 
         <div className="status-actions" role="group" aria-label="Quick status checks">
-          <Link
-            className="status-action status-action-pnr"
-            to="/demo?mode=pnr"
+          <button
+            type="button"
+            className={`status-action status-action-pnr ${showPnr ? "active" : ""}`}
+            aria-controls="home-sample-pnr"
+            aria-expanded={showPnr}
+            onClick={() => setShowPnr((open) => !open)}
           >
             <span className="status-action-label">PNR Status</span>
-            <span className="status-action-note">Open sample PNR demo</span>
-          </Link>
+            <span className="status-action-note">Try a sample PNR</span>
+          </button>
           <Link
             className="status-action status-action-train"
             to="/demo"
@@ -69,6 +74,7 @@ export function PausedHomePage() {
             <span className="status-action-note">Open sample train demo</span>
           </Link>
         </div>
+        <DemoPnrPanel id="home-sample-pnr" hidden={!showPnr} />
       </main>
 
       <BlogPreview />
